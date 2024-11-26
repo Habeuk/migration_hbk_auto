@@ -1,0 +1,7 @@
+name: 'Migration Hbk Auto'
+type: module
+description: 'Permet une migration controller des données'
+package: Custom
+core_version_requirement: ^10 || ^11
+dependencies:
+  - migrate:migrate
