@@ -1,0 +1,7 @@
+migration_hbk_auto.import_from_d7:
+  path: '/migration-hbk-auto/import-from-d7'
+  defaults:
+    _title: 'Import From D7'
+    _controller: '\Drupal\migration_hbk_auto\Controller\ImportFromD7Controller'
+  requirements:
+    _permission: 'access content'
