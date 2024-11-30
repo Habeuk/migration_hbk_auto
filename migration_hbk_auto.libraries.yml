@@ -1,0 +1,14 @@
+buildinterface:
+  css:
+    layout:
+      files/MigrateApp.css: {}
+  js:
+    files/MigrateApp.umd.min.js: {}
+  dependencies:
+    - migration_hbk_auto/vuejs3
+
+vuejs3:
+  js:
+    https://unpkg.com/vue@3/dist/vue.global.js:
+      type: external
+      minified: true
