@@ -1,36 +1,9 @@
-Html Webpack Plugin:
-<pre>
-Error: Child compilation failed:
-Module not found: Error: Can't resolve '/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/html-webpack-plugin/lib/loader.js' in '/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs'
-ModuleNotFoundError: Module not found: Error: Can't resolve '/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/html-webpack-plugin/lib/loader.js' in '/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs'
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/webpack/lib/Compilation.js:2123:28
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/webpack/lib/NormalModuleFactory.js:923:13
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:10:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/webpack/lib/NormalModuleFactory.js:339:22
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:9:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/webpack/lib/NormalModuleFactory.js:520:22
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/webpack/lib/NormalModuleFactory.js:155:10
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/webpack/lib/NormalModuleFactory.js:745:23
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/neo-async/async.js:2830:7
-    at done (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/neo-async/async.js:2925:13)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/webpack/lib/NormalModuleFactory.js:1192:23
-    at finishWithoutResolve (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:567:11)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:656:15
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:718:5
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:718:5
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:718:5
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:718:5
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:718:5
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:718:5
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:718:5
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/Resolver.js:718:5
-    at eval (eval at create (/siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)
-    at /siteweb/DrupalModules/migration_hbk_auto/hbk_atomique_vuejs/node_modules/enhanced-resolve/lib/DirectoryExistsPlugin.js:41:15
-    at process.processTicksAndRejections (node:internal/process/task_queues:81:21)</pre>
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>MigrateApp demo</title>
+<script src="./MigrateApp.umd.js"></script>
+
+
+<script>
+console.log(MigrateApp)
+</script>
