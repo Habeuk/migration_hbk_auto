@@ -5,3 +5,12 @@ migration_hbk_auto.import_from_d7:
     _controller: '\Drupal\migration_hbk_auto\Controller\ImportFromD7Controller'
   requirements:
     _permission: 'access content'
+
+migration_hbk_auto.manage_config:
+  path: '/admin/migration-hbk-auto/manage-config'
+  defaults:
+    _title: 'Import From D7'
+    _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::loadConfig'
+  requirements:
+    _permission: 'access content'
+

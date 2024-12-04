@@ -11,7 +11,7 @@ Ce fichier permet d'affichager toutes les configurations.
           </div>
         </AccordionHeader>
         <AccordionContent>
-          <BundlesDisplay :bundles="tab.bundles"></BundlesDisplay>
+          <BundlesDisplay :bundles="tab.bundles" :base_table="tab.content['base table']" :bundle_key="getBundleKey(tab)"></BundlesDisplay>
           <Button label="Afficher le code json" @click="openClose(tab)" />
           <Dialog v-model:visible="tab.show_json" maximizable modal :header="tab.title" :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
             <pre :style="{ 'font-size': '10px' }">{{ tab.content }}</pre>
@@ -56,6 +56,9 @@ function loadAllEntities() {
 function openClose(tab) {
   tab.show_json = tab.show_json ? false : true;
 }
+const getBundleKey = (tab) => {
+  return tab.content["bundle keys"] ? tab.content["bundle keys"]["bundle"] : tab.content["base table"];
+};
 
 // https://vuejs.org/api/#composition-api
 </script>

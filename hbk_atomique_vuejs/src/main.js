@@ -3,7 +3,8 @@ import App from "./App.vue";
 
 import PrimeVue from "primevue/config";
 import ThemeRender from "@primevue/themes/lara";
-
+import ToastService from "primevue/toastservice";
+import "./assets/bootstrap.scss";
 const application = createApp(App);
 
 // Ajout de primevue.
@@ -23,6 +24,9 @@ application.config.errorHandler = (err) => {
   /* gérer l'erreur */
   console.log("Main app error : ", err);
 };
+// import toast
+application.use(ToastService);
+
 // ajout des composants de maniere global
 // TodoDeleteButton import "..."
 // application.component("TodoDeleteButton", TodoDeleteButton);
