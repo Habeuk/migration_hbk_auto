@@ -12,7 +12,7 @@ application.use(PrimeVue, {
   theme: {
     preset: ThemeRender,
     options: {
-      prefix: "p",
+      prefix: "prime",
       darkModeSelector: "system",
       cssLayer: false,
     },

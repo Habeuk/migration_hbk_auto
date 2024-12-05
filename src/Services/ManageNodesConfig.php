@@ -73,10 +73,13 @@ class ManageNodesConfig extends ControllerBase {
   
   protected function compareFieldsD7__D10(&$results, $newFields, $olds_fields) {
     $status = true;
+    $results['errors'] = [];
     foreach ($olds_fields as $fieldName => $value) {
       if (empty($newFields[$fieldName]['field_config'])) {
         $status = false;
+        $results['errors'][$fieldName] = $value;
       }
+      
       if ($status) {
         //
       }

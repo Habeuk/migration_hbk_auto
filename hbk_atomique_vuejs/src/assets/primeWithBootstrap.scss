@@ -1,0 +1,5 @@
+@use "@stephane888/wbu-atomique/scss/wbu-ressources-clean.scss" as *;
+@use "./_variables" as *;
+.p-button {
+  font-size: $wbu-default-font-size;
+}
