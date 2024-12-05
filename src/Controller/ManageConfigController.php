@@ -50,7 +50,19 @@ final class ManageConfigController extends ControllerBase {
    *
    * @param Request $Request
    */
-  public function buildNodeConfig(Request $Request) {
-    //
+  public function generateFields(Request $Request) {
+    $results = [];
+    $payload = Json::decode($Request->getContent());
+    try {
+      // verifie la presence de l'entite.
+      if (!empty($payload['fields']) && !empty($payload['entity_type']) && !empty($payload['bundle'])) {
+        $results = $this->ManageNodesConfig->generateConfigFields($payload['entity_type'], $payload['bundle'], $payload['fields']);
+      }
+      return HttpResponse::response($results);
+    }
+    catch (\Exception $e) {
+      $results['errors'] = ExceptionExtractMessage::errorAll($e);
+      return HttpResponse::response($results, 425, $e->getMessage());
+    }
   }
 }

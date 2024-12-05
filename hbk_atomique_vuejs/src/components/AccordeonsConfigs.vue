@@ -5,7 +5,7 @@ Ce fichier permet d'affichager toutes les configurations.
   <div class="card" :style="{ 'max-width': '1200px', padding: '1rem' }">
     <Accordion value="0">
       <AccordionPanel v-for="tab in tabsEntitiesDefinitions.items" :key="tab.id" :value="tab.id">
-        <AccordionHeader>
+        <AccordionHeader accordion.header.color="#f00">
           <div>
             {{ tab.title }} <i>({{ tab.id }})</i>
           </div>

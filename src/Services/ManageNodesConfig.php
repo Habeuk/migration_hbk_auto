@@ -5,9 +5,8 @@ namespace Drupal\migration_hbk_auto\Services;
 
 use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Controller\ControllerBase;
 
-class ManageNodesConfig extends ControllerBase {
+class ManageNodesConfig extends ManageFieldsConfig {
   /**
    * The config storage.
    *
@@ -18,9 +17,7 @@ class ManageNodesConfig extends ControllerBase {
   protected $ConfigManager;
   
   function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, ConfigManager $ConfigManager) {
-    $this->configStorage = $config_storage;
-    $this->EntityTypeManager = $EntityTypeManager;
-    $this->ConfigManager = $ConfigManager;
+    parent::__construct($config_storage, $EntityTypeManager, $ConfigManager);
   }
   
   /**
@@ -56,21 +53,6 @@ class ManageNodesConfig extends ControllerBase {
     return $results;
   }
   
-  public function getFields($entiy_type_id, $bundle) {
-    $fields = [];
-    $queryField = $this->entityTypeManager()->getStorage('field_config')->getQuery();
-    $queryField->accessCheck(TRUE);
-    $queryField->condition('entity_type', $entiy_type_id);
-    $queryField->condition('bundle', $bundle);
-    $ids = $queryField->execute();
-    foreach ($ids as $id) {
-      $keys = explode(".", $id);
-      $fields[$keys[2]] = $this->getConfigField($keys[0], $keys[1], $keys[2]);
-      $fields[$keys[2]]['id'] = $id;
-    }
-    return $fields;
-  }
-  
   protected function compareFieldsD7__D10(&$results, $newFields, $olds_fields) {
     $status = true;
     $results['errors'] = [];
@@ -85,38 +67,6 @@ class ManageNodesConfig extends ControllerBase {
       }
     }
     return $status;
-  }
-  
-  /**
-   * Permet de recuperer les configurations d'un champs.
-   *
-   * @param string $entity_type
-   * @param string $bundle
-   * @param string $fieldName
-   */
-  public function getConfigField($entity_type, $bundle, $fieldName) {
-    $field = [
-      'field_config' => [],
-      'field_storage_config' => []
-    ];
-    /**
-     *
-     * @var \Drupal\field\Entity\FieldConfig $FieldConfig
-     */
-    $FieldConfig = $this->entityTypeManager()->getStorage('field_config')->load($entity_type . '.' . $bundle . '.' . $fieldName);
-    if ($FieldConfig) {
-      $field['field_config'] = $FieldConfig->toArray();
-    }
-    
-    /**
-     *
-     * @var \Drupal\field\Entity\FieldStorageConfig $FieldStorageConfig
-     */
-    $FieldStorageConfig = $this->entityTypeManager()->getStorage('field_storage_config')->load($entity_type . '.' . $fieldName);
-    if ($FieldStorageConfig) {
-      $field['field_storage_config'] = $FieldStorageConfig->toArray();
-    }
-    return $field;
   }
   
   /**

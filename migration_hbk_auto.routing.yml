@@ -13,4 +13,11 @@ migration_hbk_auto.manage_config:
     _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::loadConfig'
   requirements:
     _permission: 'access content'
-
+    
+migration_hbk_auto.generate_fields:
+  path: '/admin/migration-hbk-auto/generate-fields'
+  defaults:
+    _title: 'Import From D7'
+    _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::generateFields'
+  requirements:
+    _permission: 'access content'
