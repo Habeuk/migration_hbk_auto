@@ -32,7 +32,7 @@ Ce fichier permet d'affichager toutes les configurations.
               <h6>Les champs au niveau de D7</h6>
               <ul>
                 <li v-for="field in tab.fields.d7" :key="field.id" :value="field.id" :class="[field.is_created ? 'text-success' : 'text-danger']">
-                  {{ field.label }} <i>({{ field.id }})</i>
+                  {{ field.label }} <i class="small">( fieldname: {{ field.id }}, type: {{ field.type_field }} )</i>
                 </li>
               </ul>
             </div>
@@ -56,8 +56,10 @@ Ce fichier permet d'affichager toutes les configurations.
                 <AccordionContent :style="{ 'font-size': '13px' }">
                   <h5>Messages</h5>
                   <pre v-html="sub_tab.content"></pre>
-                  <h5>Storage config</h5>
-                  <pre>{{ sub_tab.value_storage_config }}</pre>
+                  <h5>Field storage config</h5>
+                  <pre>{{ sub_tab.field_storage_config }}</pre>
+                  <h5>Field config</h5>
+                  <pre>{{ sub_tab.field_config }}</pre>
                 </AccordionContent>
               </AccordionPanel>
             </Accordion>
@@ -128,6 +130,7 @@ const CheckConfig = (tab) => {
   tab.fields.d7 = [];
   tab.fields.errors = [];
   tab.messagesConfig = [];
+  tab.messagesFields = [];
   config
     .get("/migrateexport/migrate-export-entities/" + props.base_table + "/" + tab.id)
     .then((result) => {
@@ -137,7 +140,6 @@ const CheckConfig = (tab) => {
           console.log("D10  : ", resultD10);
           if (resultD10.data) {
             analysisFields(tab, resultD10.data.fields.value, resultD10.data.fields.errors, result.data[tab.id].fields);
-
             for (var i in resultD10.data) {
               const item = resultD10.data[i];
               tab.messagesConfig.push({ content: item.note, id: i, status: item.status, value: item.status });
@@ -173,7 +175,7 @@ const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7) => {
 
   for (var k in fieldsD7) {
     const field = fieldsD7[k];
-    tab.fields.d7.push({ label: field.label, id: k, is_created: fieldsD10[k] ? true : false });
+    tab.fields.d7.push({ label: field.label, id: k, is_created: fieldsD10[k] ? true : false, type_field: field.field_type.type });
   }
 };
 
@@ -191,9 +193,16 @@ const CreateFieldsNotExist = (tab) => {
       if (result.data) {
         for (var i in result.data) {
           const field = result.data[i];
-          tab.messagesFields.push({ label: i, id: i, content: field.note, status: field.status, value_storage_config: field.value_storage_config });
+          tab.messagesFields.push({
+            label: i,
+            id: i,
+            content: field.note,
+            status: field.status,
+            field_config: field.field_config,
+            field_storage_config: field.field_storage_config,
+          });
         }
-        CheckConfig(tab);
+        // CheckConfig(tab);
       }
     })
     .catch((er) => {
