@@ -115,7 +115,15 @@ const buildBundle = () => {
     bundles.items = [];
     for (var j in props.bundles) {
       const bundle = props.bundles[j];
-      bundles.items.push({ title: bundle.label, content: bundle, id: j, show_json: false, messagesConfig: [], messagesFields: [], fields: { d10: [], d7: [], errors: [] } });
+      bundles.items.push({
+        title: bundle.label,
+        content: bundle,
+        id: j,
+        show_json: false,
+        messagesConfig: [],
+        messagesFields: [],
+        fields: { d10: [], d7: [], errors: [], extra_fields: [] },
+      });
     }
   }
 };
@@ -129,8 +137,10 @@ const CheckConfig = (tab) => {
   tab.fields.d10 = [];
   tab.fields.d7 = [];
   tab.fields.errors = [];
+  tab.fields.extra_fields = [];
   tab.messagesConfig = [];
   tab.messagesFields = [];
+
   config
     .get("/migrateexport/migrate-export-entities/" + props.base_table + "/" + tab.id)
     .then((result) => {
@@ -139,7 +149,7 @@ const CheckConfig = (tab) => {
         config.post("http://you-v10.kksa/admin/migration-hbk-auto/manage-config", datas).then((resultD10) => {
           console.log("D10  : ", resultD10);
           if (resultD10.data) {
-            analysisFields(tab, resultD10.data.fields.value, resultD10.data.fields.errors, result.data[tab.id].fields);
+            analysisFields(tab, resultD10.data.fields.value, resultD10.data.fields.errors, result.data[tab.id].fields, result.data[tab.id].extra_fields);
             for (var i in resultD10.data) {
               const item = resultD10.data[i];
               tab.messagesConfig.push({ content: item.note, id: i, status: item.status, value: item.status });
@@ -162,10 +172,10 @@ const CheckConfig = (tab) => {
  * @param notDefineFields
  * @param fieldsD7
  */
-const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7) => {
+const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7, extra_fields) => {
   for (var i in fieldsD10) {
     const field = fieldsD10[i];
-    tab.fields.d10.push({ label: field.field_config.label, id: field.id, is_new_creation: fieldsD7[i] ? false : true });
+    tab.fields.d10.push({ label: field.field_config.label, id: field.id, is_new_creation: fieldsD7[i] ? false : true, field_config: field.field_config });
   }
 
   for (var j in notDefineFields) {
@@ -176,6 +186,11 @@ const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7) => {
   for (var k in fieldsD7) {
     const field = fieldsD7[k];
     tab.fields.d7.push({ label: field.label, id: k, is_created: fieldsD10[k] ? true : false, type_field: field.field_type.type });
+  }
+
+  for (var d in extra_fields) {
+    const field = extra_fields[d];
+    tab.fields.extra_fields.push({ label: field.label, id: d, content: field });
   }
 };
 
@@ -215,8 +230,63 @@ const ReCreateAllFields = (tab) => {
   console.log("tab : ", tab);
 };
 const ImportContentNotExit = (tab) => {
+  // Cette approche est centre d'avantage sur les nodes.
+  config
+    .get("/migrateexport/export-import-entities/load-entitties/" + props.base_table + "/" + tab.id + "/0/10")
+    .then((reult) => {
+      if (reult.data) {
+        for (var id in reult.data) {
+          buildAndCreateEntity(reult.data[id], tab);
+        }
+      }
+    })
+    .catch((er) => {
+      console.log("er : ", er);
+      toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 5000 });
+    });
+};
+
+/**
+ * Il faudra eviter d'envoyer une masse importante de données.
+ * @param entity
+ * @param tab
+ */
+const buildAndCreateEntity = async (entity, tab) => {
+  const retriveDataInField = (fieldD7) => {
+    const datas = [];
+    if (fieldD7.und) {
+      fieldD7.und.forEach((item) => {
+        var data = {};
+        if (item.value) data.value = item.value;
+        if (item.target_id) data.target_id = item.target_id;
+        if (item.fid) data.fid = item.fid;
+        if (item.alt) data.alt = item.alt;
+        datas.push(data);
+      });
+    } else {
+      toast.add({ severity: "error", summary: "Impossible de recuperer les données", detail: "Message Content", life: 5000 });
+      throw new Error("Impossible de recuperer les données");
+    }
+    return datas;
+  };
+  const values = {
+    title: entity.title,
+    nid: entity.nid,
+    uid: entity.uid,
+    type: entity.type,
+    created: entity.created,
+    changed: entity.changed,
+    language: entity.language,
+    status: entity.status,
+  };
+  tab.fields.d10.forEach((field) => {
+    if (entity[field.field_config.field_name]) values[field.field_config.field_name] = retriveDataInField(entity[field.field_config.field_name], field.field_config);
+  });
   //
-  console.log("tab : ", tab);
+  console.log("values : ", values);
+  return config.post("http://you-v10.kksa/apivuejs/save-entity/" + props.base_table, values).then((result) => {
+    console.log("result : ", result);
+  });
 };
 const ReImportAllContent = (tab) => {
   //
