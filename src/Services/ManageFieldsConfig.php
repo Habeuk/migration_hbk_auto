@@ -70,7 +70,7 @@ class ManageFieldsConfig extends ControllerBase {
           
           break;
         default:
-          $new_fields[$fieldName]['note'] = ' Champs "' . $field['value']['label'] . '" n\'est pas traité, type de champs :' . $field_type['type'];
+	  $new_fields[$fieldName]['note'] = ' Champs "' . $field['value']['label'] . '" n\'est pas traité, type de champs :' . $field_type['type'];
           $new_fields[$fieldName]['status'] = false;
           $new_fields[$fieldName]['value'] = $field_type;
           break;
