@@ -8,6 +8,8 @@ use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\paragraphs\Entity\ParagraphsType;
 use Stephane888\Debug\ExceptionExtractMessage;
 
 class ManageFieldsConfig extends ControllerBase {
@@ -19,11 +21,16 @@ class ManageFieldsConfig extends ControllerBase {
   protected $configStorage;
   protected $EntityTypeManager;
   protected $ConfigManager;
+  /**
+   * @var \EntityFieldManagerInterface $entityFieldManager
+   */
+  protected $entityFieldManager;
 
-  function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, ConfigManager $ConfigManager) {
+  function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, EntityFieldManagerInterface $entity_field_manager, ConfigManager $ConfigManager) {
     $this->configStorage = $config_storage;
     $this->EntityTypeManager = $EntityTypeManager;
     $this->ConfigManager = $ConfigManager;
+    $this->entityFieldManager = $entity_field_manager;
   }
 
   /**
@@ -58,6 +65,16 @@ class ManageFieldsConfig extends ControllerBase {
             $values_field_config = $this->Build__text_long("field_config", $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
 
           break;
+        case 'list_boolean':
+          $field_type["type"] = "boolean";
+          [$values_storage_config, $values_field_config] = $this->Build__list_element($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
+          $values_field_config["settings"]["on_label"] = $values_field_config["settings"]["on_label"] ?? "On";
+          $values_field_config["settings"]["off_label"] = $values_field_config["settings"]["off_label"] ?? "Off";
+          break;
+        case "list_integer":
+          $field_type["type"] = "integer";
+          [$values_storage_config, $values_field_config] = $this->Build__list_element($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
+          break;
         case "image":
           if (!$this->entityTypeManager()->getStorage('field_storage_config')->load($id_storage_config))
             $values_storage_config = $this->Build__image("field_storage_config", $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
@@ -77,8 +94,12 @@ class ManageFieldsConfig extends ControllerBase {
           if (!$this->entityTypeManager()->getStorage('field_config')->load($id_field_config))
             $values_field_config = $this->Build__entityreference("field_config", $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
           break;
+        case "multifield":
+          $this->build__multifield($field, $entity_type, $bundle);
+          dd("pause");
+          break;
         default:
-	  $new_fields[$fieldName]['note'] = ' Champs "' . $field['value']['label'] . '" n\'est pas traité, type de champs :' . $field_type['type'];
+          $new_fields[$fieldName]['note'] = ' Champs "' . $field['value']['label'] . '" n\'est pas traité, type de champs :' . $field_type['type'];
           $new_fields[$fieldName]['status'] = false;
           $new_fields[$fieldName]['value'] = $field_type;
           break;
@@ -246,6 +267,110 @@ class ManageFieldsConfig extends ControllerBase {
     return [$storage, $config];
   }
 
+  /**
+   * 
+   * @return array|null field entity_reference field definition
+   */
+  protected function build__multifield($multifield, $entity_type, $bundle) {
+    $label = "multifield " . $multifield["label"];
+    $fields = [];
+    /**
+     * @var \Drupal\field\FieldStorageConfigStorage 
+     */
+    $configStorageManager = $this->entityTypeManager()->getStorage('field_storage_config');
+    /**
+     * @var \Drupal\field\FieldConfigStorage
+     */
+    $fieldConfigManager = $this->entityTypeManager()->getStorage('field_config');
+    if (strlen($label) >= 25) {
+      $label = substr($label, 0, 25);
+    }
+    $paragrapheType = $this->create_or_select_paragraph_type($multifield["id"], $label, $multifield["value"]["description"]);
+    $fieldList = $multifield["value"]["field_type"]["storage"]["details"]["sql"]["FIELD_LOAD_CURRENT"];
+
+    foreach ($fieldList as $key => $value) {
+      unset($value["id"]);
+      $fields = \array_map(function ($element) {
+        $array = \explode("_", $element);
+        unset($array[count($array) - 1]);
+        $field_key = \implode("_", $array);
+        return $field_key;
+      }, array_keys($value));
+      $fields = \array_values(array_unique($fields));
+    }
+
+    foreach ($fields as $field_id) {
+      $paragraph_field_definition = $configStorageManager->load("paragraph." . $field_id);
+      if (!$paragraph_field_definition) {
+        /**
+         * @var  \Drupal\field\Entity\FieldStorageConfig $source_field_definition
+         */
+        $source_field_definition = $configStorageManager->load($entity_type . "." . $field_id);
+        if (!$source_field_definition) {
+          dd($entity_type . "." . $field_id);
+        }
+        $paragraph_storage_configs = [
+          'field_name' => $source_field_definition->getName(), // Use the same field name.
+          'entity_type' => 'paragraph', // Set the entity type to 'paragraph'.
+          'type' => $source_field_definition->getType(), // Copy the field type.
+          'settings' => $source_field_definition->getSettings(), // Copy the settings.
+        ];
+        $paragraph_field_definition = $configStorageManager->create($paragraph_storage_configs);
+        $paragraph_field_definition->save();
+      }
+      $paragraph_field_config = $fieldConfigManager->loadByProperties([
+        "field_name" => $field_id,
+        "entity_type" => "paragraph"
+      ]);
+      if (!$paragraph_field_config) {
+        /**
+         * @var \Drupal\field\Entity\FieldConfig
+         */
+        $source_field_config = $fieldConfigManager->load($entity_type . "." . $bundle . "." . $field_id);
+        if ($source_field_config) {
+          $configs = [
+            'field_name' => $source_field_config->getName(), // The same field name as above.
+            'bundle' => $paragrapheType->id(), // Replace with your paragraph type machine name.
+            'entity_type' => 'paragraph',
+            'label' => $source_field_config->getLabel(), // The label for the field.
+            'required' => $source_field_config->isRequired(), // Set to TRUE if the field is required.
+            'settings' => $source_field_config->getSettings(), // Additional settings can be defined here if needed.
+          ];
+          $paragraph_field_config = $fieldConfigManager->create($configs);
+          $paragraph_field_config->save();
+        }
+      } else {
+        if (!$paragraph_field_config["paragraph." . $paragrapheType->id() . "." . $field_id]) {
+          dd($paragraph_field_config);
+        } else {
+        }
+      }
+    }
+    dd($paragrapheType);
+    return null;
+  }
+
+  protected function create_or_select_paragraph_type($id, $label, $description) {
+    $paragraph_type = ParagraphsType::load($id);
+
+    // If the paragraph type exists, return it.
+    if ($paragraph_type) {
+      return $paragraph_type;
+    }
+
+    // Otherwise, create a new paragraph type.
+    $paragraph_type = ParagraphsType::create([
+      'id' => $id,
+      'label' => $label,
+      'description' => $description,
+      'fieldable' => TRUE,
+    ]);
+    $paragraph_type->save();
+
+    return $paragraph_type;
+  }
+
+
   protected function Build__entityreference($type, $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
     $config = $this->Build__base_config($type, $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
     // overrride
@@ -296,6 +421,31 @@ class ManageFieldsConfig extends ControllerBase {
     $field_type["type"] = "string";
     $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
     return $configs;
+  }
+
+  protected function Build__list_element($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
+    /**
+     * @var  \Drupal\field\Entity\FieldStorageConfig $storage
+     */
+    $storage  = $this->entityTypeManager()->getStorage('field_storage_config')->load($id_storage_config);
+    if ($storage && $storage->get("cardinality") != -1) {
+      $storage->setCardinality(-1);
+      $storage->save();
+    }
+    $field_type["cardinality"] = "-1";
+    $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
+    $this->deleteDependency("list", $configs[0]);
+    $this->deleteDependency("list", $configs[1]);
+    return $configs;
+  }
+  protected function deleteDependency($dependency, &$configs) {
+    if (isset($configs["dependencies"]["module"])) {
+      $keyToDel = array_search("list", $configs["dependencies"]["module"]);
+      if ($keyToDel !== false) {
+        unset($configs["dependencies"]["module"][$keyToDel]);
+        $configs["dependencies"]["module"] = array_values($configs["dependencies"]["module"]);
+      }
+    }
   }
   protected function Build__image($type, $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
     $config = $this->Build__base_config($type, $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);

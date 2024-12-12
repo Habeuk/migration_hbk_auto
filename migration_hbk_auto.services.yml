@@ -1,12 +1,38 @@
-services:  
+services:
   migration_hbk_auto.manage_nodes_config:
     class: Drupal\migration_hbk_auto\Services\ManageNodesConfig
-    arguments: ['@config.storage','@entity_type.manager','@migration_hbk_auto.config_manager']
+    arguments:
+      [
+        "@config.storage",
+        "@entity_type.manager",
+        "@entity_field.manager",
+        "@migration_hbk_auto.config_manager",
+      ]
 
   migration_hbk_auto.manage_fields_config:
     class: Drupal\migration_hbk_auto\Services\ManageFieldsConfig
-    arguments: ['@config.storage','@entity_type.manager','@migration_hbk_auto.config_manager']
+    arguments:
+      [
+        "@config.storage",
+        "@entity_type.manager",
+        "@entity_field.manager",
+        "@migration_hbk_auto.config_manager",
+      ]
 
   migration_hbk_auto.config_manager:
     class: Drupal\migration_hbk_auto\Services\ConfigManager
-    arguments: ['@config.storage','@event_dispatcher','@config.manager','@lock.persistent','@config.typed','@module_handler','@module_installer','@theme_handler', '@string_translation','@extension.list.module','@extension.list.theme','@messenger']
+    arguments:
+      [
+        "@config.storage",
+        "@event_dispatcher",
+        "@config.manager",
+        "@lock.persistent",
+        "@config.typed",
+        "@module_handler",
+        "@module_installer",
+        "@theme_handler",
+        "@string_translation",
+        "@extension.list.module",
+        "@extension.list.theme",
+        "@messenger",
+      ]

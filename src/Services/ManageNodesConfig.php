@@ -1,9 +1,11 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace Drupal\migration_hbk_auto\Services;
 
 use Drupal\Core\Config\StorageInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 class ManageNodesConfig extends ManageFieldsConfig {
@@ -15,11 +17,17 @@ class ManageNodesConfig extends ManageFieldsConfig {
   protected $configStorage;
   protected $EntityTypeManager;
   protected $ConfigManager;
-  
-  function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, ConfigManager $ConfigManager) {
-    parent::__construct($config_storage, $EntityTypeManager, $ConfigManager);
+
+
+  /**
+   * @var \EntityFieldManagerInterface $entityFieldManager
+   */
+  protected $entityFieldManager;
+
+  function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, EntityFieldManagerInterface $entity_field_manager, ConfigManager $ConfigManager) {
+    parent::__construct($config_storage, $EntityTypeManager, $entity_field_manager, $ConfigManager);
   }
-  
+
   /**
    * Permet d'analyser la configuration
    */
@@ -52,7 +60,7 @@ class ManageNodesConfig extends ManageFieldsConfig {
     // verification des modes d'editions.
     return $results;
   }
-  
+
   protected function compareFieldsD7__D10(&$results, $newFields, $olds_fields) {
     $status = true;
     $results['errors'] = [];
@@ -61,14 +69,14 @@ class ManageNodesConfig extends ManageFieldsConfig {
         $status = false;
         $results['errors'][$fieldName] = $value;
       }
-      
+
       if ($status) {
         //
       }
     }
     return $status;
   }
-  
+
   /**
    * Cest un tableau qui contient les bases de l'informations.
    *
