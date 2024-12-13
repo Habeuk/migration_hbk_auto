@@ -1,6 +1,5 @@
 <?php
-
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Drupal\migration_hbk_auto\Services;
 
@@ -20,13 +19,13 @@ class ManageFieldsConfig extends ControllerBase {
   protected $configStorage;
   protected $EntityTypeManager;
   protected $ConfigManager;
-
+  
   function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, ConfigManager $ConfigManager) {
     $this->configStorage = $config_storage;
     $this->EntityTypeManager = $EntityTypeManager;
     $this->ConfigManager = $ConfigManager;
   }
-
+  
   /**
    * Permet de generer et d'importer la configuration des champs.
    */
@@ -59,7 +58,7 @@ class ManageFieldsConfig extends ControllerBase {
             $values_storage_config,
             $values_field_config
           ] = $this->Build__text_long($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
-
+          
           break;
         case 'list_boolean':
           $field_type["type"] = "boolean";
@@ -96,11 +95,10 @@ class ManageFieldsConfig extends ControllerBase {
             $values_storage_config,
             $values_field_config
           ] = $this->Build__entityreference("field_storage_config", $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
-
+          
           break;
         case "multifield":
           $this->build__multifield($field, $entity_type, $bundle);
-          dd("pause");
           break;
         default:
           $new_fields[$fieldName]['note'] = ' Champs "' . $field['value']['label'] . '" n\'est pas traité, type de champs :' . $field_type['type'];
@@ -115,7 +113,8 @@ class ManageFieldsConfig extends ControllerBase {
             $new_fields[$fieldName]['field_storage_config'] = $this->importConfig('field.storage.' . $id_storage_config, $values_storage_config);
             $new_fields[$fieldName]['note'] = 'Champs "' . $field['value']['label'] . '" crée';
             $new_fields[$fieldName]['status'] = true;
-          } catch (\Exception $e) {
+          }
+          catch (\Exception $e) {
             $hasError = true;
             $new_fields[$fieldName]['note'] = $e->getMessage();
             $new_fields[$fieldName]['status'] = false;
@@ -126,13 +125,15 @@ class ManageFieldsConfig extends ControllerBase {
             $new_fields[$fieldName]['field_config'] = $this->importConfig('field.field.' . $id_field_config, $values_field_config);
             $new_fields[$fieldName]['note'] = 'Champs "' . $field['value']['label'] . '" crée';
             $new_fields[$fieldName]['status'] = true;
-          } catch (\Exception $e) {
+          }
+          catch (\Exception $e) {
             $hasError = true;
             $new_fields[$fieldName]['note'] = $e->getMessage();
             $new_fields[$fieldName]['status'] = false;
             $new_fields[$fieldName]['field_config'] = $values_field_config;
           }
-      } elseif (empty($new_fields[$fieldName]['value'])) {
+      }
+      elseif (empty($new_fields[$fieldName]['value'])) {
         $new_fields[$fieldName]['note'] = 'Champs "' . $field['value']['label'] . '" existe deja';
         $new_fields[$fieldName]['status'] = true;
         $new_fields[$fieldName]['field_storage_config'] = $this->ConfigManager->readConfigById('field.storage.' . $id_storage_config);
@@ -141,7 +142,7 @@ class ManageFieldsConfig extends ControllerBase {
     }
     return $new_fields;
   }
-
+  
   /**
    * Import via les mecanismes d'import, il verifie egalement que
    * l'environnement est pret.
@@ -159,11 +160,12 @@ class ManageFieldsConfig extends ControllerBase {
         return $config;
       }
       throw new \ErrorException(" Une erreur s'est produite lors de la creation de configuration " . $name);
-    } else {
+    }
+    else {
       throw new \ErrorException(" La module : '$name', ne respecte pas la structure. Doit commencer par 'field.storage.' ou 'field.field.' ");
     }
   }
-
+  
   /**
    * Recupere les champs creer au niveau de l'administration pour une entite.
    *
@@ -185,7 +187,7 @@ class ManageFieldsConfig extends ControllerBase {
     }
     return $fields;
   }
-
+  
   /**
    * Permet de recuperer les configurations d'un champs.
    *
@@ -206,7 +208,7 @@ class ManageFieldsConfig extends ControllerBase {
     if ($FieldConfig) {
       $field['field_config'] = $FieldConfig->toArray();
     }
-
+    
     /**
      *
      * @var \Drupal\field\Entity\FieldStorageConfig $FieldStorageConfig
@@ -217,7 +219,7 @@ class ManageFieldsConfig extends ControllerBase {
     }
     return $field;
   }
-
+  
   protected function Build__taxonomy($field_type, $entityType, $bundle, $label, $description) {
     $vocabulary = $field_type['settings']['handler_settings']["target_bundles"];
     $target_bundles = [];
@@ -247,7 +249,7 @@ class ManageFieldsConfig extends ControllerBase {
         ]
       ]
     ];
-
+    
     $config = [
       'field_name' => $field_type['field_name'],
       'field_type' => "entity_reference",
@@ -267,18 +269,17 @@ class ManageFieldsConfig extends ControllerBase {
         'settings' => []
       ]
     ];
-
+    
     return [
       $storage,
       $config
     ];
   }
-
-
+  
   protected function changeFieldEntity(&$field, $entity_type) {
     $field["entity_type"] = $entity_type;
     $bundles = [];
-
+    
     foreach ($field["field_type"]["bundles"]["multifield"] as $bundle_id) {
       if (ParagraphsType::load($bundle_id)) {
         $bundles[] = $bundle_id;
@@ -289,7 +290,7 @@ class ManageFieldsConfig extends ControllerBase {
     ];
     return $field;
   }
-
+  
   /**
    *
    * @return array|null field entity_reference field definition
@@ -323,15 +324,15 @@ class ManageFieldsConfig extends ControllerBase {
     $this->generateConfigFields("paragraph", $paragrapheType->id(), $fields);
     return $paragrapheType;
   }
-
+  
   protected function create_or_select_paragraph_type($id, $label, $description) {
     $paragraph_type = ParagraphsType::load($id);
-
+    
     // If the paragraph type exists, return it.
     if ($paragraph_type) {
       return $paragraph_type;
     }
-
+    
     // Otherwise, create a new paragraph type.
     $paragraph_type = ParagraphsType::create(
       [
@@ -343,22 +344,21 @@ class ManageFieldsConfig extends ControllerBase {
         'icon_default' => null,
         'behavior_plugins' => [],
         'description' => $description
-      ]
-    );
+      ]);
     $paragraph_type->save();
-
+    
     return $paragraph_type;
   }
-
+  
   protected function Build__entityreference($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
     $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
     // overrride
     $this->addDependencyEntityreference($configs[1], 'field_config', $field_type);
     $this->addDependencyEntityreference($configs[0], 'field_storage_config', $field_type);
-
+    
     return $configs;
   }
-
+  
   protected function addDependencyEntityreference(&$config, $type, $field_type) {
     if ($type == 'field_config') {
       // Le type de champs 'entityreference' devient "entity_reference".
@@ -380,7 +380,8 @@ class ManageFieldsConfig extends ControllerBase {
             ]
           ]
         ];
-      } elseif ($field_type['settings']['handler'] == 'base') {
+      }
+      elseif ($field_type['settings']['handler'] == 'base') {
         $target_bundles = $field_type['settings']['handler_settings']['target_bundles'] ?? "";
         $config['settings'] = [
           'handler' => 'default:' . $field_type['settings']['target_type'],
@@ -388,7 +389,8 @@ class ManageFieldsConfig extends ControllerBase {
             'target_bundles' => $target_bundles
           ]
         ];
-      } else {
+      }
+      else {
         throw new \ErrorException(" Probleme dans la configuration du setting du champs reference ");
       }
     }
@@ -401,13 +403,13 @@ class ManageFieldsConfig extends ControllerBase {
       }
     }
   }
-
+  
   protected function Build__string($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
     $field_type["type"] = "string";
     $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
     return $configs;
   }
-
+  
   protected function Build__list_element($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
     /**
      *
@@ -424,7 +426,7 @@ class ManageFieldsConfig extends ControllerBase {
     $this->deleteDependency("list", $configs[1]);
     return $configs;
   }
-
+  
   protected function deleteDependency($dependency, &$configs) {
     if (isset($configs["dependencies"]["module"])) {
       $keyToDel = array_search("list", $configs["dependencies"]["module"]);
@@ -434,19 +436,19 @@ class ManageFieldsConfig extends ControllerBase {
       }
     }
   }
-
+  
   protected function Build__image($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
     $config = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
     // overrride
     return $config;
   }
-
+  
   protected function Build__text_long($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
     $config = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
     // overrride
     return $config;
   }
-
+  
   protected function Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
     $result = [];
     $result[] = !$this->entityTypeManager()->getStorage('field_storage_config')->load($id_storage_config) ? [
@@ -474,7 +476,7 @@ class ManageFieldsConfig extends ControllerBase {
       "dependencies" => [
         'config' => [
           "field.storage." . $id_storage_config,
-          ($entity_type == "paragraph" ? "paragraphs.paragraphs_type." :  $entity_type . ".type.") . $bundle
+          ($entity_type == "paragraph" ? "paragraphs.paragraphs_type." : $entity_type . ".type.") . $bundle
         ],
         "module" => [
           $field_type['module']
@@ -496,7 +498,7 @@ class ManageFieldsConfig extends ControllerBase {
     // throw new \ErrorException(" Le type de configuration de champs definit
     // n'est pas pris en compte");
   }
-
+  
   /**
    *
    * @deprecated code use Build__base()
@@ -558,7 +560,7 @@ class ManageFieldsConfig extends ControllerBase {
       ];
     throw new \ErrorException(" Le type de configuration de champs definit n'est pas pris en compte");
   }
-
+  
   /**
    * Import via l'entite.
    * (preferable d'utiliser importConfig )
@@ -572,7 +574,7 @@ class ManageFieldsConfig extends ControllerBase {
     $FieldConfig->save();
     return $FieldConfig->toArray();
   }
-
+  
   /**
    * import via l'entite.
    * (preferable d'utiliser importConfig )

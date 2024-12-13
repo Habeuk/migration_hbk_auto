@@ -5,7 +5,6 @@ services:
       [
         "@config.storage",
         "@entity_type.manager",
-        "@entity_field.manager",
         "@migration_hbk_auto.config_manager",
       ]
 
@@ -15,7 +14,6 @@ services:
       [
         "@config.storage",
         "@entity_type.manager",
-        "@entity_field.manager",
         "@migration_hbk_auto.config_manager",
       ]
 
