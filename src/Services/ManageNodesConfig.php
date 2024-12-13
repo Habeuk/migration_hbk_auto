@@ -18,14 +18,8 @@ class ManageNodesConfig extends ManageFieldsConfig {
   protected $EntityTypeManager;
   protected $ConfigManager;
 
-
-  /**
-   * @var \EntityFieldManagerInterface $entityFieldManager
-   */
-  protected $entityFieldManager;
-
-  function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, EntityFieldManagerInterface $entity_field_manager, ConfigManager $ConfigManager) {
-    parent::__construct($config_storage, $EntityTypeManager, $entity_field_manager, $ConfigManager);
+  function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, ConfigManager $ConfigManager) {
+    parent::__construct($config_storage, $EntityTypeManager, $ConfigManager);
   }
 
   /**
