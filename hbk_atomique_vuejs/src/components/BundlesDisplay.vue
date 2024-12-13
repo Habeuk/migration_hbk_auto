@@ -146,7 +146,7 @@ const CheckConfig = (tab) => {
     .then((result) => {
       if (result.data) {
         const datas = { config_id: props.base_table + "." + props.bundle_key + "." + tab.id, datas: result.data[tab.id] ? result.data[tab.id] : result.data };
-        config.post("http://you-v10.kksa/admin/migration-hbk-auto/manage-config", datas).then((resultD10) => {
+        config.post(config.getDomain() + "/admin/migration-hbk-auto/manage-config", datas).then((resultD10) => {
           console.log("D10  : ", resultD10);
           if (resultD10.data) {
             analysisFields(tab, resultD10.data.fields.value, resultD10.data.fields.errors, result.data[tab.id].fields, result.data[tab.id].extra_fields);
@@ -197,7 +197,7 @@ const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7, extra_fields)
 const CreateFieldsNotExist = (tab) => {
   tab.messagesFields = [];
   config
-    .post("http://you-v10.kksa/admin/migration-hbk-auto/generate-fields", {
+    .post(config.getDomain() + "/admin/migration-hbk-auto/generate-fields", {
       fields: tab.fields.errors,
       entity_type: props.base_table,
       bundle_key: props.bundle_key,
@@ -284,7 +284,7 @@ const buildAndCreateEntity = async (entity, tab) => {
   });
   //
   console.log("values : ", values);
-  return config.post("http://you-v10.kksa/apivuejs/save-entity/" + props.base_table, values).then((result) => {
+  return config.post(config.getDomain() + "/apivuejs/save-entity/" + props.base_table, values).then((result) => {
     console.log("result : ", result);
   });
 };
