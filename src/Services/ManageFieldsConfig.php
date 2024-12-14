@@ -588,4 +588,23 @@ class ManageFieldsConfig extends ControllerBase {
     $FieldStorageConfig->save();
     return $FieldStorageConfig->toArray();
   }
+  
+  /**
+   * Permet de retourner le nombre de contenu d'une entité.
+   *
+   * @param string $entity_type_id
+   *        // exemple node
+   * @param string $nundle
+   *        // exemple article
+   */
+  protected function CountEntities(string $entity_type_id, $nundle = null) {
+    $query = $this->entityTypeManager()->getStorage($entity_type_id)->getQuery();
+    $query->accessCheck(TRUE);
+    if ($nundle && $this->entityTypeManager()->getStorage($entity_type_id)->getEntityType()->getBundleEntityType()) {
+      // on definie la clée du bundle à "type", on va modifier plus tard si
+      // necessaire à detectant automatiquement la clée.
+      $query->condition('type', $nundle);
+    }
+    return $query->count()->execute();
+  }
 }

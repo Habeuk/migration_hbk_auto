@@ -1,6 +1,5 @@
 <?php
-
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace Drupal\migration_hbk_auto\Services;
 
@@ -17,11 +16,11 @@ class ManageNodesConfig extends ManageFieldsConfig {
   protected $configStorage;
   protected $EntityTypeManager;
   protected $ConfigManager;
-
+  
   function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, ConfigManager $ConfigManager) {
     parent::__construct($config_storage, $EntityTypeManager, $ConfigManager);
   }
-
+  
   /**
    * Permet d'analyser la configuration
    */
@@ -35,26 +34,42 @@ class ManageNodesConfig extends ManageFieldsConfig {
       'fields' => [
         'note' => "Les champs n'existe pas",
         'status' => false
+      ],
+      'count_entities' => [
+        'note' => "Aucun contenu importer",
+        'status' => false
       ]
     ];
-    // verification de la config.
+    /**
+     * 1: Verification de la config.
+     */
     $config = $this->config($config_id);
     if (!$config->isNew()) {
       $results['config']['note'] = "La configuration existe";
       $results['config']['value'] = $config->getRawData();
       $results['config']['status'] = true;
     }
-    // verification des champs.
+    // Verification des champs.
     $results['fields']['value'] = $this->getFields("node", $configD7['type']);
     $results['fields']['status'] = $this->compareFieldsD7__D10($results['fields'], $results['fields']['value'], $datas['fields']);
     if ($results['fields']['status']) {
       $results['fields']['note'] = 'Les champs sont ok';
     }
-    // verification des modes d'affichages
-    // verification des modes d'editions.
+    if ($count = $this->CountEntities("node", $configD7['type'])) {
+      $results['count_entities']['status'] = true;
+      $results['count_entities']['note'] = "Contenu importés : " . $count;
+    }
+    /**
+     * 2: Verification des modes d'affichages.
+     */
+    //
+    /**
+     * 3: Verification des modes d'editions.
+     */
+    
     return $results;
   }
-
+  
   protected function compareFieldsD7__D10(&$results, $newFields, $olds_fields) {
     $status = true;
     $results['errors'] = [];
@@ -63,14 +78,14 @@ class ManageNodesConfig extends ManageFieldsConfig {
         $status = false;
         $results['errors'][$fieldName] = $value;
       }
-
+      
       if ($status) {
         //
       }
     }
     return $status;
   }
-
+  
   /**
    * Cest un tableau qui contient les bases de l'informations.
    *

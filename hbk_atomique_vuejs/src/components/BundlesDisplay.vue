@@ -39,7 +39,7 @@ Ce fichier permet d'affichager toutes les configurations.
             <div v-if="tab.fields.d10.length" class="col">
               <h6>Les champs au niveau de D10</h6>
               <ul>
-                <li v-for="field in tab.fields.d10" :key="field.id" :value="field.id" :class="[field.is_new_creation ? 'text-info' : 'text-success']">
+                <li v-for="field in tab.fields.d10" :key="field.id" :value="field.id" :class="[field.is_manuel_creation ? 'text-info' : 'text-success']">
                   {{ field.label }} <i>({{ field.id }})</i>
                 </li>
               </ul>
@@ -146,6 +146,12 @@ const CheckConfig = (tab) => {
     .get("/migrateexport/migrate-export-entities/" + props.base_table + "/" + tab.id)
     .then((result) => {
       if (result.data) {
+        tab.messagesConfig.push({
+          content: "Contenu à importer : " + result.data[tab.id].count_entities,
+          id: "d7_import",
+          status: true,
+          value: result.data[tab.id].count_entities,
+        });
         const datas = { config_id: props.base_table + "." + props.bundle_key + "." + tab.id, datas: result.data[tab.id] ? result.data[tab.id] : result.data };
         config.post(url, datas).then((resultD10) => {
           console.log("D10  : ", resultD10);
@@ -176,7 +182,7 @@ const CheckConfig = (tab) => {
 const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7, extra_fields) => {
   for (var i in fieldsD10) {
     const field = fieldsD10[i];
-    tab.fields.d10.push({ label: field.field_config.label, id: field.id, is_new_creation: fieldsD7[i] ? false : true, field_config: field.field_config });
+    tab.fields.d10.push({ label: field.field_config.label, id: field.id, is_manuel_creation: fieldsD7[i] ? false : true, field_config: field.field_config });
   }
 
   for (var j in notDefineFields) {
@@ -233,7 +239,7 @@ const ReCreateAllFields = (tab) => {
 const ImportContentNotExit = (tab) => {
   // Cette approche est centre d'avantage sur les nodes.
   config
-    .get("/migrateexport/export-import-entities/load-entitties/" + props.base_table + "/" + tab.id + "/0/10")
+    .get("/migrateexport/export-import-entities/load-entitties/" + props.base_table + "/" + tab.id + "/0/2")
     .then((reult) => {
       if (reult.data) {
         for (var id in reult.data) {
@@ -253,7 +259,7 @@ const ImportContentNotExit = (tab) => {
  * @param tab
  */
 const buildAndCreateEntity = async (entity, tab) => {
-  const retriveDataInField = (fieldD7) => {
+  const retriveDataInField = (fieldD7, field_config) => {
     const datas = [];
     if (fieldD7.und) {
       fieldD7.und.forEach((item) => {
@@ -265,7 +271,8 @@ const buildAndCreateEntity = async (entity, tab) => {
         datas.push(data);
       });
     } else {
-      toast.add({ severity: "error", summary: "Impossible de recuperer les données", detail: "Message Content", life: 5000 });
+      toast.add({ severity: "error", summary: "Impossible de recuperer les données", detail: "Erreur au niveau champs :" + fieldD7, life: 5000 });
+      console.log("Erreur : ", fieldD7, "\n", field_config);
       throw new Error("Impossible de recuperer les données");
     }
     return datas;
@@ -281,14 +288,15 @@ const buildAndCreateEntity = async (entity, tab) => {
     status: entity.status,
   };
   tab.fields.d10.forEach((field) => {
-    if (entity[field.field_config.field_name]) values[field.field_config.field_name] = retriveDataInField(entity[field.field_config.field_name], field.field_config);
+    if (entity[field.field_config.field_name] && !field.is_manuel_creation)
+      values[field.field_config.field_name] = retriveDataInField(entity[field.field_config.field_name], field.field_config);
   });
-  //
-  console.log("values : ", values);
   return config.post(config.getCustomDomain() + "/apivuejs/save-entity/" + props.base_table, values).then((result) => {
     console.log("result : ", result);
+    toast.add({ severity: "success", summary: "Contenu creer ou mise à jour : " + result.data.id, detail: "Contenu creer ou mise à jour :", life: 5000 });
   });
 };
+
 const ReImportAllContent = (tab) => {
   //
   console.log("tab : ", tab);
