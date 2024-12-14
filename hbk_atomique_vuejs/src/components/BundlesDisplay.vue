@@ -300,6 +300,8 @@ const buildAndCreateEntity = async (entity, tab) => {
               if (item.target_id) data.target_id = item.target_id;
               if (item.fid) data.target_id = item.fid;
               if (item.alt) data.alt = item.alt;
+              if (item.format) data.format = item.format;
+              if (item.summary) data.summary = item.summary;
               datas.push(data);
             });
             resolv(datas);
