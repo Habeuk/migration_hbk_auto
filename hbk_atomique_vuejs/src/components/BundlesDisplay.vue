@@ -259,41 +259,113 @@ const ImportContentNotExit = (tab) => {
  * @param tab
  */
 const buildAndCreateEntity = async (entity, tab) => {
-  const retriveDataInField = (fieldD7, field_config) => {
-    const datas = [];
-    if (fieldD7.und) {
-      fieldD7.und.forEach((item) => {
-        var data = {};
-        if (item.value) data.value = item.value;
-        if (item.target_id) data.target_id = item.target_id;
-        if (item.fid) data.fid = item.fid;
-        if (item.alt) data.alt = item.alt;
-        datas.push(data);
+  return new Promise((content_create, error_create_content) => {
+    const entity_title = entity.title;
+    /**
+     * Recupere les données par champs.
+     * @param fieldD7
+     * @param field_config
+     */
+    const retriveDataInField = (fieldD7, field_config) => {
+      return new Promise((resolv, reject) => {
+        const datas = [];
+        if (fieldD7.und) {
+          if (field_config.field_type == "image") {
+            // On verifie si les images sont deja present
+            config
+              .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-fields", { fields: fieldD7.und })
+              .then((result) => {
+                const files = result.data;
+                fieldD7.und.forEach((item) => {
+                  if (files[item.fid]) {
+                    datas.push({
+                      target_id: item.fid,
+                      alt: item.alt ? item.alt : entity_title,
+                      title: item.title,
+                      width: item.width,
+                      height: item.height,
+                    });
+                  }
+                });
+                console.log("result : ", result, "\n files", files, "\n datas : ", datas);
+                resolv(datas);
+              })
+              .catch(() => {
+                reject("Impossible de recuperer les données");
+              });
+          } else {
+            fieldD7.und.forEach((item) => {
+              const data = {};
+              if (item.value) data.value = item.value;
+              if (item.target_id) data.target_id = item.target_id;
+              if (item.fid) data.target_id = item.fid;
+              if (item.alt) data.alt = item.alt;
+              datas.push(data);
+            });
+            resolv(datas);
+          }
+        } else {
+          toast.add({ severity: "error", summary: "Impossible de recuperer les données", detail: "Erreur au niveau champs :" + fieldD7, life: 5000 });
+          console.log("Erreur : ", fieldD7, "\n", field_config);
+          reject("Impossible de recuperer les données");
+        }
       });
-    } else {
-      toast.add({ severity: "error", summary: "Impossible de recuperer les données", detail: "Erreur au niveau champs :" + fieldD7, life: 5000 });
-      console.log("Erreur : ", fieldD7, "\n", field_config);
-      throw new Error("Impossible de recuperer les données");
-    }
-    return datas;
-  };
-  const values = {
-    title: entity.title,
-    nid: entity.nid,
-    uid: entity.uid,
-    type: entity.type,
-    created: entity.created,
-    changed: entity.changed,
-    language: entity.language,
-    status: entity.status,
-  };
-  tab.fields.d10.forEach((field) => {
-    if (entity[field.field_config.field_name] && !field.is_manuel_creation)
-      values[field.field_config.field_name] = retriveDataInField(entity[field.field_config.field_name], field.field_config);
-  });
-  return config.post(config.getCustomDomain() + "/apivuejs/save-entity/" + props.base_table, values).then((result) => {
-    console.log("result : ", result);
-    toast.add({ severity: "success", summary: "Contenu creer ou mise à jour : " + result.data.id, detail: "Contenu creer ou mise à jour :", life: 5000 });
+    };
+    const values = {
+      title: entity.title,
+      nid: entity.nid,
+      uid: entity.uid,
+      type: entity.type,
+      created: entity.created,
+      changed: entity.changed,
+      language: entity.language,
+      status: entity.status,
+    };
+    /**
+     * Construction des champs, lors de cette construction on peut avoir besoin de creer d'autres données nessaire et recupere l'id final.
+     * On ferra cela dans une boucle personnalisé afin de controller le processus.
+     */
+    const loopFields = (id, contents) => {
+      return new Promise((resolv, reject) => {
+        if (tab.fields.d10[id]) {
+          const field = tab.fields.d10[id];
+          if (entity[field.field_config.field_name] && !field.is_manuel_creation) {
+            retriveDataInField(entity[field.field_config.field_name], field.field_config)
+              .then((datas) => {
+                console.log(field.field_config.field_name, " :: ", datas);
+                contents[field.field_config.field_name] = datas;
+                id++;
+                resolv(loopFields(id, contents));
+              })
+              .catch((er) => {
+                reject(er);
+              });
+          } else {
+            id++;
+            resolv(loopFields(id, contents));
+          }
+        } else {
+          resolv(contents);
+        }
+      });
+    };
+    loopFields(0, {})
+      .then((contents) => {
+        console.log("contents : ", contents);
+        config
+          .post(config.getCustomDomain() + "/apivuejs/save-entity/" + props.base_table, { ...values, ...contents })
+          .then((result) => {
+            console.log("result : ", result);
+            toast.add({ severity: "success", summary: "Contenu creer ou mise à jour : " + result.data.id, detail: "Contenu creer ou mise à jour :", life: 5000 });
+            content_create(result);
+          })
+          .catch((er) => {
+            error_create_content(er);
+          });
+      })
+      .catch((er) => {
+        error_create_content(er);
+      });
   });
 };
 

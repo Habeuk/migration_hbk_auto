@@ -21,3 +21,11 @@ migration_hbk_auto.generate_fields:
     _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::generateFields'
   requirements:
     _permission: 'access content'
+    
+migration_hbk_auto.import_files:
+  path: '/admin/migration-hbk-auto/import-fields'
+  defaults:
+    _title: 'Import fields'
+    _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::importFiles'
+  requirements:
+    _permission: 'access content'

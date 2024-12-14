@@ -10,6 +10,8 @@ use Drupal\Component\Serialization\Json;
 use Stephane888\Debug\ExceptionExtractMessage;
 use Drupal\migration_hbk_auto\Services\ManageNodesConfig;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\file\Entity\File;
 
 /**
  * Returns responses for Migration Hbk Auto routes.
@@ -29,11 +31,61 @@ final class ManageConfigController extends ControllerBase {
     return new static($container->get('migration_hbk_auto.manage_nodes_config'));
   }
   
+  public function importFiles(Request $Request) {
+    $payload = Json::decode($Request->getContent());
+    $results = [];
+    try {
+      if (!empty($payload['fields'])) {
+        /**
+         *
+         * @var \Drupal\Core\File\FileSystem $filesystem
+         */
+        $filesystem = \Drupal::service('file_system');
+        /** @var \Drupal\file\FileRepository $fileRepository */
+        // $fileRepository = \Drupal::service('file.repository');
+        foreach ($payload['fields'] as $field) {
+          $file = File::load($field['fid']);
+          if (!$file) {
+            $file_info = $this->getBasePathFromUri($field['uri']);
+            if ($filesystem->prepareDirectory($file_info['base_path'], FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS)) {
+              // Save the file.
+              $data = file_get_contents($field['url']);
+              if (!empty($data)) {
+                $newUri = $filesystem->saveData($data, $field['uri']);
+                // $file = $fileRepository->writeData($data, $field['uri']);
+                $file = File::create([
+                  'fid' => $field['fid'],
+                  'uri' => $newUri,
+                  'filename' => $field['filename']
+                ]);
+                $file->setOwnerId($this->currentUser->id());
+                $file->setPermanent();
+                $file->save();
+              }
+            }
+            else
+              throw new \Exception("Une erreur s'est produite, le fichier n'a pas pu etre creer");
+            //
+          }
+          $results[$file->id()] = [
+            'id' => $file->id(),
+            'filename' => $file->getFilename()
+          ];
+        }
+        return HttpResponse::response($results);
+      }
+    }
+    catch (\Exception $e) {
+      $results['errors'] = ExceptionExtractMessage::errorAll($e);
+      return HttpResponse::response($results, 425, $e->getMessage());
+    }
+  }
+  
   public function loadConfig(Request $Request) {
     $results = [];
     $payload = Json::decode($Request->getContent());
     try {
-      // verifie la presence de l'entite.
+      // Verifie la presence de l'entite.
       if (!empty($payload['config_id'])) {
         $results = $this->ManageNodesConfig->CheckConfiguration($payload['config_id'], $payload['datas']);
       }
@@ -64,5 +116,32 @@ final class ManageConfigController extends ControllerBase {
       $results['errors'] = ExceptionExtractMessage::errorAll($e);
       return HttpResponse::response($results, 425, $e->getMessage());
     }
+  }
+  
+  /**
+   * Le uri contient egalement le nom de l'image, l'idée est de separer les
+   * deux.
+   * RQ: dans row on a un filename, mais ce dernier est parfois different ce
+   * celui au niveau de URI, et cela peut generer une erreur.
+   */
+  protected function getBasePathFromUri(string $uri) {
+    $f1 = explode("://", $uri);
+    $f2 = explode("/", $f1[1]);
+    $basePath = $f1[0] . "://";
+    $nbre = count($f2) - 1;
+    if ($nbre) {
+      for ($i = 0; $i < $nbre; $i++) {
+        $basePath .= $f2[$i] . "/";
+      }
+      $filename = $f2[$nbre];
+    }
+    else {
+      $basePath .= "migrations";
+      $filename = $f2[0];
+    }
+    return [
+      'base_path' => $basePath,
+      'filename' => $filename
+    ];
   }
 }
