@@ -23,9 +23,17 @@ migration_hbk_auto.generate_fields:
     _permission: 'access content'
     
 migration_hbk_auto.import_files:
-  path: '/admin/migration-hbk-auto/import-fields'
+  path: '/admin/migration-hbk-auto/import-files'
   defaults:
     _title: 'Import fields'
     _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::importFiles'
+  requirements:
+    _permission: 'access content'
+    
+migration_hbk_auto.import_terms:
+  path: '/admin/migration-hbk-auto/import-terms'
+  defaults:
+    _title: 'Import fields'
+    _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::CheckTermsExist'
   requirements:
     _permission: 'access content'

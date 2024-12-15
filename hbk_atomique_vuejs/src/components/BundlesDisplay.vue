@@ -277,7 +277,7 @@ const buildAndCreateEntity = async (entity, tab) => {
           // On importe les images si ele n'existe pas.
           if (field_config.field_type == "image") {
             config
-              .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-fields", { fields: fieldD7.und })
+              .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-files", { files: fieldD7.und, base_url: "http://you-v7.kksa/sites/you.fr/files" })
               .then((result) => {
                 const files = result.data;
                 fieldD7.und.forEach((item) => {
@@ -291,7 +291,6 @@ const buildAndCreateEntity = async (entity, tab) => {
                     });
                   }
                 });
-                console.log("result : ", result, "\n files", files, "\n datas : ", datas);
                 resolv(datas);
               })
               .catch(() => {
@@ -300,9 +299,30 @@ const buildAndCreateEntity = async (entity, tab) => {
           }
           // On cree les entites de reference s'ils n'existent pas.
           else if (field_config.field_type == "entity_reference") {
-            //cas des tags
+            console.log("entity_reference : ", field_config);
+            // cas des tags
             if (field_config.settings.handler == "default:taxonomy_term") {
-              config.post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-terms", { fields: fieldD7.und });
+              config
+                .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-terms", {
+                  terms: fieldD7.und,
+                  vocabularies: field_config.settings.handler_settings.target_bundles,
+                })
+                .then((result) => {
+                  const terms = result.data;
+                  fieldD7.und.forEach((term) => {
+                    if (terms[term.tid])
+                      datas.push({
+                        target_id: term.tid,
+                      });
+                    else {
+                      reject("Le terme taxo :" + term.tid + " n'existe pas");
+                    }
+                  });
+                  resolv(datas);
+                })
+                .catch(() => {
+                  reject("Une erreur s'est produite lors de la verification des termes");
+                });
             } else reject("L'entite de reference n'est pas encore traiter");
           } else {
             fieldD7.und.forEach((item) => {

@@ -31,11 +31,43 @@ final class ManageConfigController extends ControllerBase {
     return new static($container->get('migration_hbk_auto.manage_nodes_config'));
   }
   
+  public function CheckTermsExist(Request $Request) {
+    $payload = Json::decode($Request->getContent());
+    $results = [];
+    try {
+      if (!empty($payload['terms']) && !empty($payload['vocabularies'])) {
+        $ids = [];
+        foreach ($payload['terms'] as $value) {
+          $ids[$value['tid']] = $value['tid'];
+        }
+        
+        $query = $this->entityTypeManager()->getStorage("taxonomy_term")->getQuery();
+        $query->accessCheck(TRUE);
+        $query->condition('vid', $payload['vocabularies'], 'IN');
+        $query->condition('tid', $ids, "IN");
+        $new_ids = $query->execute();
+        if ($new_ids) {
+          foreach ($ids as $tid) {
+            if (!empty($new_ids[$tid]))
+              $results[$tid] = $tid;
+            else
+              $results[$tid] = false;
+          }
+        }
+      }
+      return HttpResponse::response($results);
+    }
+    catch (\Exception $e) {
+      $results['errors'] = ExceptionExtractMessage::errorAll($e);
+      return HttpResponse::response($results, 425, $e->getMessage());
+    }
+  }
+  
   public function importFiles(Request $Request) {
     $payload = Json::decode($Request->getContent());
     $results = [];
     try {
-      if (!empty($payload['fields'])) {
+      if (!empty($payload['files']) && !empty($payload['base_url'])) {
         /**
          *
          * @var \Drupal\Core\File\FileSystem $filesystem
@@ -43,13 +75,15 @@ final class ManageConfigController extends ControllerBase {
         $filesystem = \Drupal::service('file_system');
         /** @var \Drupal\file\FileRepository $fileRepository */
         // $fileRepository = \Drupal::service('file.repository');
-        foreach ($payload['fields'] as $field) {
+        foreach ($payload['files'] as $field) {
           $file = File::load($field['fid']);
           if (!$file) {
             $file_info = $this->getBasePathFromUri($field['uri']);
             if ($filesystem->prepareDirectory($file_info['base_path'], FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS)) {
+              $array_uri = \explode("://", $field['uri']);
               // Save the file.
-              $data = file_get_contents($field['url']);
+              $url = $payload['base_url'] . "/" . $array_uri[1];
+              $data = file_get_contents($url);
               if (!empty($data)) {
                 $newUri = $filesystem->saveData($data, $field['uri']);
                 // $file = $fileRepository->writeData($data, $field['uri']);
@@ -58,10 +92,12 @@ final class ManageConfigController extends ControllerBase {
                   'uri' => $newUri,
                   'filename' => $field['filename']
                 ]);
-                $file->setOwnerId($this->currentUser->id());
+                $file->setOwnerId($this->currentUser()->id());
                 $file->setPermanent();
                 $file->save();
               }
+              else
+                throw new \Exception("Le fichier n'existe plus");
             }
             else
               throw new \Exception("Une erreur s'est produite, le fichier n'a pas pu etre creer");
