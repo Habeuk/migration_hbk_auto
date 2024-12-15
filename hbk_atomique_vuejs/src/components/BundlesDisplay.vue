@@ -95,7 +95,7 @@ import Button from "primevue/button";
 import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 
-const props = defineProps(["bundles", "base_table", "bundle_key"]);
+const props = defineProps(["bundles", "base_table", "bundle_key", "entity_type_id"]);
 
 /**
  * Contient les definitions des
@@ -133,7 +133,7 @@ const buildBundle = () => {
  *
  */
 const CheckConfig = (tab) => {
-  //reset datas :
+  // reset datas :
   tab.fields.d10 = [];
   tab.fields.d7 = [];
   tab.fields.errors = [];
@@ -143,7 +143,7 @@ const CheckConfig = (tab) => {
   const url = config.getCustomDomain() + "/admin/migration-hbk-auto/manage-config";
   console.log("url : ", url);
   config
-    .get("/migrateexport/migrate-export-entities/" + props.base_table + "/" + tab.id)
+    .get("/migrateexport/migrate-export-entities/" + props.entity_type_id + "/" + tab.id)
     .then((result) => {
       if (result.data) {
         tab.messagesConfig.push({
@@ -152,7 +152,11 @@ const CheckConfig = (tab) => {
           status: true,
           value: result.data[tab.id].count_entities,
         });
-        const datas = { config_id: props.base_table + "." + props.bundle_key + "." + tab.id, datas: result.data[tab.id] ? result.data[tab.id] : result.data };
+        let config_id = props.entity_type_id + "." + props.bundle_key + "." + tab.id;
+        // if ("taxonomy_term" == props.entity_type_id) {
+        //   config_id = "taxonomy.vocabulary." + tab.id;
+        // }
+        const datas = { config_id: config_id, datas: result.data[tab.id] ? result.data[tab.id] : result.data };
         config.post(url, datas).then((resultD10) => {
           console.log("D10  : ", resultD10);
           if (resultD10.data) {
@@ -206,7 +210,7 @@ const CreateFieldsNotExist = (tab) => {
   config
     .post(config.getCustomDomain() + "/admin/migration-hbk-auto/generate-fields", {
       fields: tab.fields.errors,
-      entity_type: props.base_table,
+      entity_type: props.entity_type_id,
       bundle_key: props.bundle_key,
       bundle: tab.id,
     })
@@ -239,7 +243,7 @@ const ReCreateAllFields = (tab) => {
 const ImportContentNotExit = (tab) => {
   // Cette approche est centre d'avantage sur les nodes.
   config
-    .get("/migrateexport/export-import-entities/load-entitties/" + props.base_table + "/" + tab.id + "/0/2")
+    .get("/migrateexport/export-import-entities/load-entitties/" + props.entity_type_id + "/" + tab.id + "/0/2")
     .then((reult) => {
       if (reult.data) {
         for (var id in reult.data) {
@@ -270,8 +274,8 @@ const buildAndCreateEntity = async (entity, tab) => {
       return new Promise((resolv, reject) => {
         const datas = [];
         if (fieldD7.und) {
+          // On importe les images si ele n'existe pas.
           if (field_config.field_type == "image") {
-            // On verifie si les images sont deja present
             config
               .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-fields", { fields: fieldD7.und })
               .then((result) => {
@@ -293,6 +297,13 @@ const buildAndCreateEntity = async (entity, tab) => {
               .catch(() => {
                 reject("Impossible de recuperer les données");
               });
+          }
+          // On cree les entites de reference s'ils n'existent pas.
+          else if (field_config.field_type == "entity_reference") {
+            //cas des tags
+            if (field_config.settings.handler == "default:taxonomy_term") {
+              config.post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-terms", { fields: fieldD7.und });
+            } else reject("L'entite de reference n'est pas encore traiter");
           } else {
             fieldD7.und.forEach((item) => {
               const data = {};
@@ -355,7 +366,7 @@ const buildAndCreateEntity = async (entity, tab) => {
       .then((contents) => {
         console.log("contents : ", contents);
         config
-          .post(config.getCustomDomain() + "/apivuejs/save-entity/" + props.base_table, { ...values, ...contents })
+          .post(config.getCustomDomain() + "/apivuejs/save-entity/" + props.entity_type_id, { ...values, ...contents })
           .then((result) => {
             console.log("result : ", result);
             toast.add({ severity: "success", summary: "Contenu creer ou mise à jour : " + result.data.id, detail: "Contenu creer ou mise à jour :", life: 5000 });

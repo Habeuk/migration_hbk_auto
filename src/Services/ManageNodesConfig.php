@@ -25,7 +25,15 @@ class ManageNodesConfig extends ManageFieldsConfig {
    * Permet d'analyser la configuration
    */
   function CheckConfiguration($config_id, $datas) {
-    $configD7 = $datas['content'];
+    [
+      $entity_id,
+      $bundle_key,
+      $bundle
+    ] = explode(".", $config_id);
+    if ($entity_id == 'taxonomy_term') {
+      $bundle_key = 'vid';
+      $config_id = "taxonomy.vocabulary." . $bundle;
+    }
     $results = [
       'config' => [
         'note' => "La configuration n'existe pas",
@@ -50,12 +58,12 @@ class ManageNodesConfig extends ManageFieldsConfig {
       $results['config']['status'] = true;
     }
     // Verification des champs.
-    $results['fields']['value'] = $this->getFields("node", $configD7['type']);
+    $results['fields']['value'] = $this->getFields($entity_id, $bundle);
     $results['fields']['status'] = $this->compareFieldsD7__D10($results['fields'], $results['fields']['value'], $datas['fields']);
     if ($results['fields']['status']) {
       $results['fields']['note'] = 'Les champs sont ok';
     }
-    if ($count = $this->CountEntities("node", $configD7['type'])) {
+    if ($count = $this->CountEntities($entity_id, $bundle, $bundle_key)) {
       $results['count_entities']['status'] = true;
       $results['count_entities']['note'] = "Contenu importés : " . $count;
     }

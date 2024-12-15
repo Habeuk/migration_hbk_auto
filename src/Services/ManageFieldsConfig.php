@@ -597,13 +597,13 @@ class ManageFieldsConfig extends ControllerBase {
    * @param string $nundle
    *        // exemple article
    */
-  protected function CountEntities(string $entity_type_id, $nundle = null) {
+  protected function CountEntities(string $entity_type_id, $nundle = null, $bundle_key = "type") {
     $query = $this->entityTypeManager()->getStorage($entity_type_id)->getQuery();
     $query->accessCheck(TRUE);
     if ($nundle && $this->entityTypeManager()->getStorage($entity_type_id)->getEntityType()->getBundleEntityType()) {
       // on definie la clée du bundle à "type", on va modifier plus tard si
       // necessaire à detectant automatiquement la clée.
-      $query->condition('type', $nundle);
+      $query->condition($bundle_key, $nundle);
     }
     return $query->count()->execute();
   }

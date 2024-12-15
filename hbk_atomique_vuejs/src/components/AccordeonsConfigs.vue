@@ -11,7 +11,7 @@ Ce fichier permet d'affichager toutes les configurations.
           </div>
         </AccordionHeader>
         <AccordionContent>
-          <BundlesDisplay :bundles="tab.bundles" :base_table="tab.content['base table']" :bundle_key="getBundleKey(tab)"></BundlesDisplay>
+          <BundlesDisplay :bundles="tab.bundles" :base_table="tab.content['base table']" :entity_type_id="tab.id" :bundle_key="getBundleKey(tab)"></BundlesDisplay>
           <Button label="Afficher le code json" @click="openClose(tab)" />
           <Dialog v-model:visible="tab.show_json" maximizable modal :header="tab.title" :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
             <pre :style="{ 'font-size': '10px' }">{{ tab.content }}</pre>
