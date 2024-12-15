@@ -299,7 +299,7 @@ const buildAndCreateEntity = async (entity, tab) => {
           }
           // On cree les entites de reference s'ils n'existent pas.
           else if (field_config.field_type == "entity_reference") {
-            console.log("entity_reference : ", field_config);
+            console.log("Entity_reference : ", field_config, "\n Values : ", fieldD7);
             // cas des tags
             if (field_config.settings.handler == "default:taxonomy_term") {
               config
@@ -323,6 +323,14 @@ const buildAndCreateEntity = async (entity, tab) => {
                 .catch(() => {
                   reject("Une erreur s'est produite lors de la verification des termes");
                 });
+            } else if (field_config.settings.handler == "views") {
+              // pour l'instant, on n'a pas trouver comment verifier les données pour ce cas.
+              fieldD7.und.forEach((entity_reference) => {
+                datas.push({
+                  target_id: entity_reference.target_id,
+                });
+              });
+              resolv(datas);
             } else reject("L'entite de reference n'est pas encore traiter");
           } else {
             fieldD7.und.forEach((item) => {
@@ -393,10 +401,12 @@ const buildAndCreateEntity = async (entity, tab) => {
             content_create(result);
           })
           .catch((er) => {
+            toast.add({ severity: "error", summary: "Erreur de sauvegarde de l'entite", detail: er, life: 5000 });
             error_create_content(er);
           });
       })
       .catch((er) => {
+        toast.add({ severity: "error", summary: "Erreur de traitement de l'entité", detail: er, life: 5000 });
         error_create_content(er);
       });
   });
