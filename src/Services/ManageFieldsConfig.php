@@ -94,11 +94,16 @@ class ManageFieldsConfig extends ControllerBase {
           [
             $values_storage_config,
             $values_field_config
-          ] = $this->Build__entityreference("field_storage_config", $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
+          ] = $this->Build__entityreference($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
           
           break;
         case "multifield":
-          $this->build__multifield($field, $entity_type, $bundle);
+          [
+            $values_storage_config,
+            $values_field_config
+          ] = $this->build__multifield($field, $entity_type, $bundle, $id_storage_config, $id_field_config, $field);
+          $new_fields[$fieldName]['status'] = true;
+          $new_fields[$fieldName]['value'] = $field_type;
           break;
         default:
           $new_fields[$fieldName]['note'] = ' Champs "' . $field['value']['label'] . '" n\'est pas traité, type de champs :' . $field_type['type'];
@@ -295,7 +300,7 @@ class ManageFieldsConfig extends ControllerBase {
    *
    * @return array|null field entity_reference field definition
    */
-  protected function build__multifield($multifield, $entity_type, $bundle) {
+  protected function build__multifield($multifield, $entity_type, $bundle, $id_storage_config, $id_field_config, $field_multifield) {
     $label = "multifield " . $multifield["label"];
     $fields = [];
     /**
@@ -321,8 +326,20 @@ class ManageFieldsConfig extends ControllerBase {
         "value" => $field
       ];
     }
+    // on construit les sous champs.
     $this->generateConfigFields("paragraph", $paragrapheType->id(), $fields);
-    return $paragrapheType;
+    
+    // On ajuste les valeurs de field_type
+    $field_type = $multifield["value"]["field_type"];
+    $field_type['module'] = 'paragraphs';
+    $field_type['type'] = 'entity_reference';
+    return $this->createFieldForMultifield($field_type, $entity_type, $multifield["id"], $id_storage_config, $bundle, $field_multifield, $id_field_config);
+  }
+  
+  protected function createFieldForMultifield($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
+    $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config);
+    // override
+    return $configs;
   }
   
   protected function create_or_select_paragraph_type($id, $label, $description) {
@@ -359,7 +376,7 @@ class ManageFieldsConfig extends ControllerBase {
     return $configs;
   }
   
-  protected function addDependencyEntityreference(&$config, $type, $field_type) {
+  protected function addDependencyEntityreference(array &$config, string $type, array $field_type) {
     if ($type == 'field_config') {
       // Le type de champs 'entityreference' devient "entity_reference".
       $config['field_type'] = 'entity_reference';
@@ -396,10 +413,12 @@ class ManageFieldsConfig extends ControllerBase {
     }
     if ($type == "field_storage_config") {
       $config["type"] = "entity_reference";
-      $keyToDel = array_search("entityreference", $config["dependencies"]["module"]);
-      if ($keyToDel !== false) {
-        unset($config["dependencies"]["module"][$keyToDel]);
-        $config["dependencies"]["module"] = array_values($config["dependencies"]["module"]);
+      if (!empty($config["dependencies"]["module"])) {
+        $keyToDel = array_search("entityreference", $config["dependencies"]["module"]);
+        if ($keyToDel !== false) {
+          unset($config["dependencies"]["module"][$keyToDel]);
+          $config["dependencies"]["module"] = array_values($config["dependencies"]["module"]);
+        }
       }
     }
   }
@@ -449,7 +468,7 @@ class ManageFieldsConfig extends ControllerBase {
     return $config;
   }
   
-  protected function Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
+  protected function Build__base(array $field_type, string $entity_type, string $fieldName, string $id_storage_config, string $bundle, array $field, string $id_field_config) {
     $result = [];
     $result[] = !$this->entityTypeManager()->getStorage('field_storage_config')->load($id_storage_config) ? [
       "cardinality" => $field_type['cardinality'],
@@ -497,68 +516,6 @@ class ManageFieldsConfig extends ControllerBase {
     return $result;
     // throw new \ErrorException(" Le type de configuration de champs definit
     // n'est pas pris en compte");
-  }
-  
-  /**
-   *
-   * @deprecated code use Build__base()
-   * @param string $type
-   * @param string $field_type
-   * @param string $entity_type
-   * @param string $fieldName
-   * @param string $id_storage_config
-   * @param string $bundle
-   * @param string $field
-   * @param string $id_field_config
-   * @return []
-   */
-  protected function Build__base_config($type, $field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config) {
-    if ($type == 'field_storage_config')
-      return [
-        "cardinality" => $field_type['cardinality'],
-        'dependencies' => [
-          'module' => [
-            $field_type['module'],
-            $entity_type
-          ],
-          'config' => []
-        ],
-        'entity_type' => $entity_type,
-        'field_name' => $fieldName,
-        'id' => $id_storage_config,
-        // 'langcode' => "und",
-        'status' => (int) $field_type['active'],
-        'translatable' => (int) $field_type['translatable'],
-        'type' => $field_type['type'],
-        'settings' => []
-      ];
-    if ($type == 'field_config')
-      return [
-        "bundle" => $bundle,
-        "default_value" => [],
-        "default_value_callback" => "",
-        "dependencies" => [
-          'config' => [
-            "field.storage." . $id_storage_config,
-            $entity_type . ".type." . $bundle
-          ],
-          "module" => [
-            $field_type['module']
-          ]
-        ],
-        "description" => $field['value']['description'],
-        "entity_type" => $entity_type,
-        "field_name" => $fieldName,
-        'field_type' => $field_type['type'],
-        'id' => $id_field_config,
-        'label' => $field['label'],
-        'langcode' => "und",
-        'required' => $field['value']['required'],
-        'settings' => [],
-        'status' => (int) $field_type['active'],
-        'translatable' => (int) $field_type['translatable']
-      ];
-    throw new \ErrorException(" Le type de configuration de champs definit n'est pas pris en compte");
   }
   
   /**

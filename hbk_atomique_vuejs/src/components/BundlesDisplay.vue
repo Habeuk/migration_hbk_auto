@@ -294,7 +294,7 @@ const buildAndCreateEntity = async (entity, tab) => {
                 resolv(datas);
               })
               .catch(() => {
-                reject("Impossible de recuperer les données");
+                reject("Impossible de recuperer les images");
               });
           }
           // On cree les entites de reference s'ils n'existent pas.
@@ -346,8 +346,7 @@ const buildAndCreateEntity = async (entity, tab) => {
             resolv(datas);
           }
         } else {
-          toast.add({ severity: "error", summary: "Impossible de recuperer les données", detail: "Erreur au niveau champs :" + fieldD7, life: 5000 });
-          console.log("Erreur : ", fieldD7, "\n", field_config);
+          console.log("Erreur, contenu du champs ", fieldD7, "\n Information sur le champs : ", field_config);
           reject("Impossible de recuperer les données");
         }
       });
@@ -370,7 +369,7 @@ const buildAndCreateEntity = async (entity, tab) => {
       return new Promise((resolv, reject) => {
         if (tab.fields.d10[id]) {
           const field = tab.fields.d10[id];
-          if (entity[field.field_config.field_name] && !field.is_manuel_creation) {
+          if (!field.is_manuel_creation && entity[field.field_config.field_name] && entity[field.field_config.field_name].und) {
             retriveDataInField(entity[field.field_config.field_name], field.field_config)
               .then((datas) => {
                 console.log(field.field_config.field_name, " :: ", datas);
