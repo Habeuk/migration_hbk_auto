@@ -333,9 +333,10 @@ const buildAndCreateEntity = async (entity, tab) => {
               resolv(datas);
             } else reject("L'entite de reference n'est pas encore traiter");
           }
-          // on doit creer les paragraphes et à la suite, recuperer les ids et remplir les champs.
+          // on doit creer les paragraphes et à la suite, recuperer les ids et remplir le champs.
           else if (field_config.field_type == "multifield") {
             //
+            reject("le mtype multifield n'est pas encore traiter");
           } else {
             fieldD7.und.forEach((item) => {
               const data = {};
