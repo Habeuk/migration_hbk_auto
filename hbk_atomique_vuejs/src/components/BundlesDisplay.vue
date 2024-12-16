@@ -65,14 +65,29 @@ Ce fichier permet d'affichager toutes les configurations.
             </Accordion>
           </div>
           <!-- Analyse des contenus -->
-          <div v-if="tab.fields.errors && tab.fields.errors.length == 0 && tab.fields.d10 && tab.fields.d10.length">
+          <div v-if="tab.fields.errors && tab.fields.errors.length == 0 && tab.messagesConfig && tab.messagesConfig.length">
             <hr />
+            <div class="row mb-3">
+              <div class="col col-sm-3">
+                <label class="font-bold block mb-2"> Pagination length </label>
+                <InputNumber v-model="tab.pagination.length" fluid />
+              </div>
+              <div class="col col-sm-3">
+                <label class="font-bold block mb-2"> Pagination start </label>
+                <InputNumber v-model="tab.pagination.start" fluid />
+              </div>
+            </div>
             <div class="row">
               <div class="col">
-                <Button label="Importer les contenus manquant" severity="success" @click="ImportContentNotExit(tab)" />
+                <Button
+                  :label="'Importer les contenus : ' + tab.pagination.start + '/' + tab.count_entities.to_import"
+                  severity="success"
+                  @click="ImportContentNotExit(tab)"
+                  :disabled="tab.pagination.run"
+                />
               </div>
               <div class="col">
-                <Button label="Re-importer les contenus" severity="info" @click="ReImportAllContent(tab)" />
+                <Button label="Gestion de l'import des contenus" severity="info" @click="ReImportAllContent(tab)" />
               </div>
             </div>
           </div>
@@ -91,11 +106,12 @@ import AccordionPanel from "primevue/accordionpanel";
 import AccordionHeader from "primevue/accordionheader";
 import AccordionContent from "primevue/accordioncontent";
 import Button from "primevue/button";
+import InputNumber from "primevue/inputnumber";
 //import Dialog from "primevue/dialog";
 import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 
-const props = defineProps(["bundles", "base_table", "bundle_key", "entity_type_id"]);
+const props = defineProps(["bundles", "base_table", "bundle_key", "entity_type_id", "entity_key_id", "entity_key_label"]);
 
 /**
  * Contient les definitions des
@@ -123,6 +139,11 @@ const buildBundle = () => {
         messagesConfig: [],
         messagesFields: [],
         fields: { d10: [], d7: [], errors: [], extra_fields: [] },
+        pagination: { start: 0, length: 2, run: false },
+        count_entities: {
+          to_import: 0,
+          imported: 0,
+        },
       });
     }
   }
@@ -140,12 +161,14 @@ const CheckConfig = (tab) => {
   tab.fields.extra_fields = [];
   tab.messagesConfig = [];
   tab.messagesFields = [];
+
   const url = config.getCustomDomain() + "/admin/migration-hbk-auto/manage-config";
   console.log("url : ", url);
   config
     .get("/migrateexport/migrate-export-entities/" + props.entity_type_id + "/" + tab.id)
     .then((result) => {
       if (result.data) {
+        tab.count_entities.to_import = result.data[tab.id].count_entities;
         tab.messagesConfig.push({
           content: "Contenu à importer : " + result.data[tab.id].count_entities,
           id: "d7_import",
@@ -201,6 +224,7 @@ const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7, extra_fields)
 
   for (var d in extra_fields) {
     const field = extra_fields[d];
+    tab.fields.d10;
     tab.fields.extra_fields.push({ label: field.label, id: d, content: field });
   }
 };
@@ -243,14 +267,33 @@ const ReCreateAllFields = (tab) => {
   console.log("tab : ", tab);
 };
 const ImportContentNotExit = (tab) => {
+  const start = tab.pagination.start;
+  const length = tab.pagination.length;
+  tab.pagination.run = true;
   // Cette approche est centre d'avantage sur les nodes.
   config
-    .get("/migrateexport/export-import-entities/load-entitties/" + props.entity_type_id + "/" + tab.id + "/0/2")
+    .get("/migrateexport/export-import-entities/load-entitties/" + props.entity_type_id + "/" + tab.id + "/" + start + "/" + length)
     .then((reult) => {
       if (reult.data) {
+        const promises = [];
         for (var id in reult.data) {
-          buildAndCreateEntity(reult.data[id], tab);
+          promises.push(buildAndCreateEntity(reult.data[id], tab));
         }
+        Promise.all(promises)
+          .then(() => {
+            tab.pagination.start = start + length;
+            console.log("all entities creates");
+            toast.add({ severity: "success", summary: "Tous les contenus ont été crees ", detail: "Contenu creer ou mise à jour :", life: 5000 });
+            tab.pagination.run = false;
+          })
+          .catch(() => {
+            // tab.pagination.start = start + length;
+            tab.pagination.run = false;
+            console.log("all entities creates, with erros");
+          });
+      } else {
+        toast.add({ severity: "warn", summary: "Tous les contenus ont deja été importés ", detail: "Contenu deja importés", life: 5000 });
+        tab.pagination.run = false;
       }
     })
     .catch((er) => {
@@ -266,7 +309,9 @@ const ImportContentNotExit = (tab) => {
  */
 const buildAndCreateEntity = async (entity, tab) => {
   return new Promise((content_create, error_create_content) => {
-    const entity_title = entity.title;
+    const baseInfo = buildBaseInfoForEntity(entity);
+    const entity_title = baseInfo.entity_title;
+    const values = baseInfo.base_entity;
     /**
      * Recupere les données par champs.
      * @param fieldD7
@@ -317,7 +362,7 @@ const buildAndCreateEntity = async (entity, tab) => {
                         target_id: term.tid,
                       });
                     else {
-                      reject("Le terme taxo :" + term.tid + " n'existe pas");
+                      reject("Le terme taxo : '" + term.tid + "' du vocabulaire '" + JSON.stringify(field_config.settings.handler_settings.target_bundles) + "' n'existe pas");
                     }
                   });
                   resolv(datas);
@@ -358,16 +403,7 @@ const buildAndCreateEntity = async (entity, tab) => {
         }
       });
     };
-    const values = {
-      title: entity.title,
-      nid: entity.nid,
-      uid: entity.uid,
-      type: entity.type,
-      created: entity.created,
-      changed: entity.changed,
-      language: entity.language,
-      status: entity.status,
-    };
+
     /**
      * Construction des champs, lors de cette construction on peut avoir besoin de creer d'autres données nessaire et recupere l'id final.
      * On ferra cela dans une boucle personnalisé afin de controller le processus.
@@ -403,7 +439,6 @@ const buildAndCreateEntity = async (entity, tab) => {
           .post(config.getCustomDomain() + "/apivuejs/save-entity/" + props.entity_type_id, { ...values, ...contents })
           .then((result) => {
             console.log("result : ", result);
-            toast.add({ severity: "success", summary: "Contenu creer ou mise à jour : " + result.data.id, detail: "Contenu creer ou mise à jour :", life: 5000 });
             content_create(result);
           })
           .catch((er) => {
@@ -416,6 +451,35 @@ const buildAndCreateEntity = async (entity, tab) => {
         error_create_content(er);
       });
   });
+};
+
+const buildBaseInfoForEntity = (entity) => {
+  const entity_title = entity[props.entity_key_label];
+  let values = { [props.entity_key_label]: entity_title, [props.entity_key_id]: entity[props.entity_key_id] };
+  switch (props.entity_type_id) {
+    case "node":
+      values = {
+        ...values,
+        uid: entity.uid,
+        type: entity.type,
+        created: entity.created,
+        changed: entity.changed,
+        language: entity.language,
+        status: entity.status,
+      };
+      break;
+    case "taxonomy_term":
+      values = {
+        ...values,
+        description: entity.description,
+        vid: entity.vocabulary_machine_name,
+        weight: entity.weight,
+      };
+      break;
+    default:
+      break;
+  }
+  return { base_entity: values, entity_title: entity_title };
 };
 
 const ReImportAllContent = (tab) => {
