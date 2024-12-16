@@ -143,8 +143,8 @@ final class ManageConfigController extends ControllerBase {
     $payload = Json::decode($Request->getContent());
     try {
       // verifie la presence de l'entite.
-      if (!empty($payload['fields']) && !empty($payload['entity_type']) && !empty($payload['bundle'])) {
-        $results = $this->ManageNodesConfig->generateConfigFields($payload['entity_type'], $payload['bundle'], $payload['fields']);
+      if (!empty($payload['fields']) && !empty($payload['entity_type']) && !empty($payload['bundle']) && !empty($payload['bundle_key'])) {
+        $results = $this->ManageNodesConfig->generateConfigFields($payload['entity_type'], $payload['bundle'], $payload['fields'], $payload['bundle_key']);
       }
       return HttpResponse::response($results);
     }

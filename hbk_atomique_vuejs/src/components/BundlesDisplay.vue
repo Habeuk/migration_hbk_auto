@@ -207,11 +207,13 @@ const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7, extra_fields)
 
 const CreateFieldsNotExist = (tab) => {
   tab.messagesFields = [];
+  let bundle_key = props.bundle_key;
+  if (props.entity_type_id == "taxonomy_term") bundle_key = "vid";
   config
     .post(config.getCustomDomain() + "/admin/migration-hbk-auto/generate-fields", {
       fields: tab.fields.errors,
       entity_type: props.entity_type_id,
-      bundle_key: props.bundle_key,
+      bundle_key: bundle_key,
       bundle: tab.id,
     })
     .then((result) => {
