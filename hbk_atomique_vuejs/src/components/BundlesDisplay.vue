@@ -64,7 +64,7 @@ Ce fichier permet d'affichager toutes les configurations.
               </AccordionPanel>
             </Accordion>
           </div>
-          <!-- Analyse des contenus -->
+          <!-- gestion de l'import des contenus -->
           <div v-if="tab.fields.errors && tab.fields.errors.length == 0 && tab.messagesConfig && tab.messagesConfig.length">
             <hr />
             <div class="row mb-3">
@@ -87,9 +87,25 @@ Ce fichier permet d'affichager toutes les configurations.
                 />
               </div>
               <div class="col">
-                <Button label="Gestion de l'import des contenus" severity="info" @click="ReImportAllContent(tab)" />
+                <Button label="Gestion de l'import des contenus" severity="info" @click="ManageImportContent(tab)" />
               </div>
             </div>
+            <Dialog
+              v-model:visible="tab.show_json"
+              maximizable
+              modal
+              :header="'Gerer l\'import de l\'entite : ' + tab.title"
+              :style="{ width: '90vw' }"
+              :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
+            >
+              <h5 class="fw-light my-0">Contenu sur Drupal 7</h5>
+              <DataTable :value="results_import.entities" tableStyle="min-width: 50rem">
+                <Column field="id" header="#id"></Column>
+                <Column field="name" header="Titre"></Column>
+                <Column field="status" header="Status"></Column>
+                <Column field="action" header="#action"></Column>
+              </DataTable>
+            </Dialog>
           </div>
         </AccordionContent>
       </AccordionPanel>
@@ -107,8 +123,12 @@ import AccordionHeader from "primevue/accordionheader";
 import AccordionContent from "primevue/accordioncontent";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
-//import Dialog from "primevue/dialog";
+import Dialog from "primevue/dialog";
 import Toast from "primevue/toast";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+// import ColumnGroup from 'primevue/columngroup';   // optional
+// import Row from 'primevue/row';                   // optional
 import { useToast } from "primevue/usetoast";
 
 const props = defineProps(["bundles", "base_table", "bundle_key", "entity_type_id", "entity_key_id", "entity_key_label"]);
@@ -117,6 +137,7 @@ const props = defineProps(["bundles", "base_table", "bundle_key", "entity_type_i
  * Contient les definitions des
  */
 const bundles = reactive({ items: [] });
+const results_import = reactive({ entities: [] });
 const toast = useToast();
 
 const numbersBundles = computed(() => {
@@ -482,9 +503,24 @@ const buildBaseInfoForEntity = (entity) => {
   return { base_entity: values, entity_title: entity_title };
 };
 
-const ReImportAllContent = (tab) => {
-  //
-  console.log("tab : ", tab);
+const ManageImportContent = (tab) => {
+  const start = tab.pagination.start;
+  const length = tab.pagination.length;
+  tab.pagination.run = true;
+  tab.show_json = true;
+  config.get("/migrateexport/export-import-entities/load-entitties/" + props.entity_type_id + "/" + tab.id + "/" + start + "/" + length).then((result) => {
+    if (result.data) {
+      console.log("result : ", result.data);
+      for (const id in result.data) {
+        const entity = result.data[id];
+        results_import.entities.push({
+          id: id,
+          name: entity[props.entity_key_label],
+        });
+      }
+    }
+    //results_import.entities
+  });
 };
 // https://vuejs.org/api/#composition-api
 </script>
