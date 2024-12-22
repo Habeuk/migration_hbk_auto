@@ -34,6 +34,9 @@ class ManageNodesConfig extends ManageFieldsConfig {
       $bundle_key = 'vid';
       $config_id = "taxonomy.vocabulary." . $bundle;
     }
+    elseif ($entity_id == 'paragraph') {
+      $config_id = "paragraphs.paragraphs_type." . $bundle;
+    }
     $results = [
       'config' => [
         'note' => "La configuration n'existe pas",

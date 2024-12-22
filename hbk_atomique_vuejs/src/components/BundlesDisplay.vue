@@ -99,11 +99,19 @@ Ce fichier permet d'affichager toutes les configurations.
               :breakpoints="{ '1199px': '90vw', '575px': '95vw' }"
             >
               <h5 class="fw-light my-0">Contenu sur Drupal 7</h5>
-              <DataTable :value="results_import.entities" tableStyle="min-width: 50rem">
+              <DataTable :value="tab.entities" tableStyle="min-width: 50rem">
                 <Column field="id" header="#id"></Column>
                 <Column field="name" header="Titre"></Column>
-                <Column field="status" header="Status"></Column>
-                <Column field="action" header="#action"></Column>
+                <Column field="status" header="Status">
+                  <template #body="slotProps">
+                    <Tag :value="slotProps.data.status ? 'Active' : 'Disabled'" :severity="slotProps.data.status ? 'success' : 'warn'" />
+                  </template>
+                </Column>
+                <Column field="action" header="#action">
+                  <template #body="slotProps">
+                    <Button icon="pi pi-upload" class="fw-bold" rounded raised @click="importOneContent(slotProps.data, tab)" :disabled="slotProps.data.run" />
+                  </template>
+                </Column>
               </DataTable>
             </Dialog>
           </div>
@@ -127,6 +135,7 @@ import Dialog from "primevue/dialog";
 import Toast from "primevue/toast";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
+import Tag from "primevue/tag";
 // import ColumnGroup from 'primevue/columngroup';   // optional
 // import Row from 'primevue/row';                   // optional
 import { useToast } from "primevue/usetoast";
@@ -137,7 +146,6 @@ const props = defineProps(["bundles", "base_table", "bundle_key", "entity_type_i
  * Contient les definitions des
  */
 const bundles = reactive({ items: [] });
-const results_import = reactive({ entities: [] });
 const toast = useToast();
 
 const numbersBundles = computed(() => {
@@ -146,6 +154,19 @@ const numbersBundles = computed(() => {
   }
   return "Aucun bundle";
 });
+
+const importOneContent = (data, tab) => {
+  console.log("importOneContent data : ", data, "\n id : ", data.id, props);
+  importEntity(tab.id, data.id).then((entity) => {
+    buildAndCreateEntity(entity, tab)
+      .then(() => {
+        toast.add({ severity: "success", summary: "Le contenu a été importer ", detail: "Contenu creer ou mise à jour :", life: 8000 });
+      })
+      .catch(() => {
+        toast.add({ severity: "error", summary: "Error lors de la creation du contenu", detail: "Errors", life: 8000 });
+      });
+  });
+};
 
 const buildBundle = () => {
   if (props.bundles) {
@@ -165,6 +186,7 @@ const buildBundle = () => {
           to_import: 0,
           imported: 0,
         },
+        entities: [],
       });
     }
   }
@@ -200,6 +222,9 @@ const CheckConfig = (tab) => {
         // if ("taxonomy_term" == props.entity_type_id) {
         //   config_id = "taxonomy.vocabulary." + tab.id;
         // }
+        if ("multifield" == props.entity_type_id) {
+          config_id = "paragraph.type." + tab.id;
+        }
         const datas = { config_id: config_id, datas: result.data[tab.id] ? result.data[tab.id] : result.data };
         config.post(url, datas).then((resultD10) => {
           console.log("D10  : ", resultD10);
@@ -212,12 +237,12 @@ const CheckConfig = (tab) => {
           }
         });
       } else {
-        toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 5000 });
+        toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 8000 });
       }
     })
     .catch((er) => {
       console.log("er : ", er);
-      toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 5000 });
+      toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 8000 });
     });
 };
 
@@ -253,11 +278,16 @@ const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7, extra_fields)
 const CreateFieldsNotExist = (tab) => {
   tab.messagesFields = [];
   let bundle_key = props.bundle_key;
+  let entity_type_id = props.entity_type_id;
   if (props.entity_type_id == "taxonomy_term") bundle_key = "vid";
+  else if (props.entity_type_id == "multifield") {
+    bundle_key = "type";
+    entity_type_id = "paragraph";
+  }
   config
     .post(config.getCustomDomain() + "/admin/migration-hbk-auto/generate-fields", {
       fields: tab.fields.errors,
-      entity_type: props.entity_type_id,
+      entity_type: entity_type_id,
       bundle_key: bundle_key,
       bundle: tab.id,
     })
@@ -280,7 +310,7 @@ const CreateFieldsNotExist = (tab) => {
     })
     .catch((er) => {
       console.log("er : ", er);
-      toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 5000 });
+      toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 8000 });
     });
 };
 const ReCreateAllFields = (tab) => {
@@ -293,7 +323,7 @@ const ImportContentNotExit = (tab) => {
   tab.pagination.run = true;
   // Cette approche est centre d'avantage sur les nodes.
   config
-    .get("/migrateexport/export-import-entities/load-entitties/" + props.entity_type_id + "/" + tab.id + "/" + start + "/" + length)
+    .get("/migrateexport/export-import-entities/load-entities/" + props.entity_type_id + "/" + tab.id + "/" + start + "/" + length)
     .then((reult) => {
       if (reult.data) {
         const promises = [];
@@ -304,7 +334,7 @@ const ImportContentNotExit = (tab) => {
           .then(() => {
             tab.pagination.start = start + length;
             console.log("all entities creates");
-            toast.add({ severity: "success", summary: "Tous les contenus ont été crees ", detail: "Contenu creer ou mise à jour :", life: 5000 });
+            toast.add({ severity: "success", summary: "Tous les contenus ont été crees ", detail: "Contenu creer ou mise à jour :", life: 8000 });
             tab.pagination.run = false;
           })
           .catch(() => {
@@ -313,14 +343,48 @@ const ImportContentNotExit = (tab) => {
             console.log("all entities creates, with erros");
           });
       } else {
-        toast.add({ severity: "warn", summary: "Tous les contenus ont deja été importés ", detail: "Contenu deja importés", life: 5000 });
+        toast.add({ severity: "warn", summary: "Tous les contenus ont deja été importés ", detail: "Contenu deja importés", life: 8000 });
         tab.pagination.run = false;
       }
     })
     .catch((er) => {
       console.log("er : ", er);
-      toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 5000 });
+      toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 8000 });
     });
+};
+
+const buildMultiFieldDatas = (multifieldDatas, field_config) => {
+  return new Promise((resolv, reject) => {
+    console.log("multifieldDatas :: ", multifieldDatas, "\n : ", field_config);
+    /**
+     * Ce gap permet de ne pas ecraser les paragraphes.
+     */
+    const gap_paragraph = 100;
+
+    const getFieldConfigParagraph = () => {
+      //
+    };
+    getFieldConfigParagraph();
+    const createParagrph = (values) => {
+      reject();
+      const entity = { parent_type: field_config.entity_type, parent_field_name: field_config.field_name, type: field_config.field_name };
+      for (const fieldName in values) {
+        if (fieldName == "id") {
+          entity.id = parseInt(values.id) + gap_paragraph;
+        } else {
+          //
+        }
+      }
+    };
+    const traiterTableau = async (Datas) => {
+      const newValues = [];
+      for (const values of Datas) {
+        newValues.push(await createParagrph(values));
+      }
+      return newValues;
+    };
+    resolv(traiterTableau(multifieldDatas));
+  });
 };
 
 /**
@@ -335,20 +399,20 @@ const buildAndCreateEntity = async (entity, tab) => {
     const values = baseInfo.base_entity;
     /**
      * Recupere les données par champs.
-     * @param fieldD7
+     * @param values
      * @param field_config
      */
-    const retriveDataInField = (fieldD7, field_config) => {
+    const retriveDataInField = (values, field_config, fieldD7) => {
       return new Promise((resolv, reject) => {
         const datas = [];
-        if (fieldD7.und) {
+        if (values.und) {
           // On importe les images si ele n'existe pas.
           if (field_config.field_type == "image") {
             config
-              .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-files", { files: fieldD7.und, base_url: "http://you-v7.kksa/sites/you.fr/files" })
+              .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-files", { files: values.und, base_url: "http://you-v7.kksa/sites/you.fr/files" })
               .then((result) => {
                 const files = result.data;
-                fieldD7.und.forEach((item) => {
+                values.und.forEach((item) => {
                   if (files[item.fid]) {
                     datas.push({
                       target_id: item.fid,
@@ -367,17 +431,17 @@ const buildAndCreateEntity = async (entity, tab) => {
           }
           // On cree les entites de reference s'ils n'existent pas.
           else if (field_config.field_type == "entity_reference") {
-            console.log("Entity_reference : ", field_config, "\n Values : ", fieldD7);
+            console.log("Entity_reference : ", field_config, "\n Values : ", values);
             // cas des tags
             if (field_config.settings.handler == "default:taxonomy_term") {
               config
                 .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-terms", {
-                  terms: fieldD7.und,
+                  terms: values.und,
                   vocabularies: field_config.settings.handler_settings.target_bundles,
                 })
                 .then((result) => {
                   const terms = result.data;
-                  fieldD7.und.forEach((term) => {
+                  values.und.forEach((term) => {
                     if (terms[term.tid])
                       datas.push({
                         target_id: term.tid,
@@ -391,9 +455,9 @@ const buildAndCreateEntity = async (entity, tab) => {
                 .catch(() => {
                   reject("Une erreur s'est produite lors de la verification des termes");
                 });
-            } else if (field_config.settings.handler == "views") {
+            } else if (field_config.settings.handler == "views" || field_config.settings.handler == "default:node") {
               // pour l'instant, on n'a pas trouver comment verifier les données pour ce cas.
-              fieldD7.und.forEach((entity_reference) => {
+              values.und.forEach((entity_reference) => {
                 datas.push({
                   target_id: entity_reference.target_id,
                 });
@@ -402,11 +466,11 @@ const buildAndCreateEntity = async (entity, tab) => {
             } else reject("L'entite de reference n'est pas encore traiter");
           }
           // on doit creer les paragraphes et à la suite, recuperer les ids et remplir le champs.
-          else if (field_config.field_type == "multifield") {
-            //
-            reject("le mtype multifield n'est pas encore traiter");
+          else if (fieldD7.type_field == "multifield") {
+            buildMultiFieldDatas(values, field_config);
+            reject("le type multifield n'est pas encore traiter");
           } else {
-            fieldD7.und.forEach((item) => {
+            values.und.forEach((item) => {
               const data = {};
               if (item.value) data.value = item.value;
               if (item.target_id) data.target_id = item.target_id;
@@ -419,10 +483,19 @@ const buildAndCreateEntity = async (entity, tab) => {
             resolv(datas);
           }
         } else {
-          console.log("Erreur, contenu du champs ", fieldD7, "\n Information sur le champs : ", field_config);
+          console.log("Erreur, contenu du champs ", values, "\n Information sur le champs : ", field_config);
           reject("Impossible de recuperer les données");
         }
       });
+    };
+    const getInfosAboutD7filed = (fieldName) => {
+      let NewItem = false;
+      tab.fields.d7.forEach((item) => {
+        if (item.id == fieldName) {
+          NewItem = item;
+        }
+      });
+      return NewItem;
     };
 
     /**
@@ -434,7 +507,8 @@ const buildAndCreateEntity = async (entity, tab) => {
         if (tab.fields.d10[id]) {
           const field = tab.fields.d10[id];
           if (!field.is_manuel_creation && entity[field.field_config.field_name] && entity[field.field_config.field_name].und) {
-            retriveDataInField(entity[field.field_config.field_name], field.field_config)
+            const fieldD7 = getInfosAboutD7filed(field.field_config.field_name);
+            retriveDataInField(entity[field.field_config.field_name], field.field_config, fieldD7)
               .then((datas) => {
                 console.log(field.field_config.field_name, " :: ", datas);
                 contents[field.field_config.field_name] = datas;
@@ -463,12 +537,12 @@ const buildAndCreateEntity = async (entity, tab) => {
             content_create(result);
           })
           .catch((er) => {
-            toast.add({ severity: "error", summary: "Erreur de sauvegarde de l'entite", detail: er, life: 5000 });
+            toast.add({ severity: "error", summary: "Erreur de sauvegarde de l'entite", detail: er, life: 8000 });
             error_create_content(er);
           });
       })
       .catch((er) => {
-        toast.add({ severity: "error", summary: "Erreur de traitement de l'entité", detail: er, life: 5000 });
+        toast.add({ severity: "error", summary: "Erreur de traitement de l'entité", detail: er, life: 8000 });
         error_create_content(er);
       });
   });
@@ -508,18 +582,55 @@ const ManageImportContent = (tab) => {
   const length = tab.pagination.length;
   tab.pagination.run = true;
   tab.show_json = true;
-  config.get("/migrateexport/export-import-entities/load-entitties/" + props.entity_type_id + "/" + tab.id + "/" + start + "/" + length).then((result) => {
-    if (result.data) {
-      console.log("result : ", result.data);
-      for (const id in result.data) {
-        const entity = result.data[id];
-        results_import.entities.push({
-          id: id,
-          name: entity[props.entity_key_label],
-        });
+  tab.entities = [];
+  if (tab.entities.length == 0) {
+    importEntities(tab.id, start, length).then((entities) => {
+      if (entities) {
+        for (const id in entities) {
+          const entity = entities[id];
+          tab.entities.push({
+            id: id,
+            name: entity[props.entity_key_label],
+            status: parseInt(entity.status),
+            run: false,
+          });
+        }
       }
-    }
-    //results_import.entities
+    });
+  }
+};
+/**
+ * Importer les contenus.
+ * @param bundle
+ * @param start
+ * @param length
+ */
+const importEntities = (bundle, start, length) => {
+  return new Promise((resolv, reject) => {
+    config
+      .get("/migrateexport/export-import-entities/load-entities/" + props.entity_type_id + "/" + bundle + "/" + start + "/" + length)
+      .then((result) => {
+        if (result.data) {
+          resolv(result.data);
+        } else resolv(false);
+      })
+      .catch((er) => {
+        reject(er);
+      });
+  });
+};
+const importEntity = (bundle, entity_id) => {
+  return new Promise((resolv, reject) => {
+    config
+      .get("/migrateexport/export-import-entity/load-entity/" + props.entity_type_id + "/" + bundle + "/" + entity_id)
+      .then((result) => {
+        if (result.data) {
+          resolv(result.data);
+        } else resolv(false);
+      })
+      .catch((er) => {
+        reject(er);
+      });
   });
 };
 // https://vuejs.org/api/#composition-api

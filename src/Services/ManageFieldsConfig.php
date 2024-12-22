@@ -52,6 +52,12 @@ class ManageFieldsConfig extends ControllerBase {
             $values_field_config
           ] = $this->Build__string($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
           break;
+        case "number_integer":
+          [
+            $values_storage_config,
+            $values_field_config
+          ] = $this->Build__interger($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
+          break;
         case "text_with_summary":
         case "text_long":
           [
@@ -83,12 +89,10 @@ class ManageFieldsConfig extends ControllerBase {
           ] = $this->Build__image($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
           break;
         case "taxonomy_term_reference":
-          $label = $field["label"];
-          $description = $field["value"]["description"];
           [
             $values_storage_config,
             $values_field_config
-          ] = $this->Build__taxonomy($field_type, $entity_type, $bundle, $label, $description);
+          ] = $this->Build__taxonomy($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
           break;
         
         case "entityreference":
@@ -126,8 +130,8 @@ class ManageFieldsConfig extends ControllerBase {
             $new_fields[$fieldName]['field_storage_config'] = $this->importConfig('field.storage.' . $id_storage_config, $values_storage_config);
             $new_fields[$fieldName]['note'] = 'Champs "' . $field['value']['label'] . '" crée';
             $new_fields[$fieldName]['status'] = true;
-            $new_fields[$fieldName]['id_storage_config'] = $id_storage_config;
-            $new_fields[$fieldName]['id_field_config'] = $id_field_config;
+            $new_fields[$fieldName]['id_storage_config'] = 'field.storage.' . $id_storage_config;
+            $new_fields[$fieldName]['id_field_config'] = 'field.field.' . $id_field_config;
           }
           catch (\Exception $e) {
             $hasError = true;
@@ -137,16 +141,16 @@ class ManageFieldsConfig extends ControllerBase {
             $new_fields[$fieldName]['field_storage_config'] = $values_storage_config;
             $new_fields[$fieldName]['errors'] = ExceptionExtractMessage::errorAll($e);
             $new_fields[$fieldName]['value'] = $field;
-            $new_fields[$fieldName]['id_storage_config'] = $id_storage_config;
-            $new_fields[$fieldName]['id_field_config'] = $id_field_config;
+            $new_fields[$fieldName]['id_storage_config'] = 'field.storage.' . $id_storage_config;
+            $new_fields[$fieldName]['id_field_config'] = 'field.field.' . $id_field_config;
           }
         if ($values_field_config && !$hasError)
           try {
             $new_fields[$fieldName]['field_config'] = $this->importConfig('field.field.' . $id_field_config, $values_field_config);
             $new_fields[$fieldName]['note'] = 'Champs "' . $field['value']['label'] . '" crée';
             $new_fields[$fieldName]['status'] = true;
-            $new_fields[$fieldName]['id_storage_config'] = $id_storage_config;
-            $new_fields[$fieldName]['id_field_config'] = $id_field_config;
+            $new_fields[$fieldName]['id_storage_config'] = 'field.storage.' . $id_storage_config;
+            $new_fields[$fieldName]['id_field_config'] = 'field.field.' . $id_field_config;
           }
           catch (\Exception $e) {
             $hasError = true;
@@ -156,8 +160,8 @@ class ManageFieldsConfig extends ControllerBase {
             $new_fields[$fieldName]['field_storage_config'] = $values_storage_config;
             $new_fields[$fieldName]['errors'] = ExceptionExtractMessage::errorAll($e);
             $new_fields[$fieldName]['value'] = $field['value'];
-            $new_fields[$fieldName]['id_storage_config'] = $id_storage_config;
-            $new_fields[$fieldName]['id_field_config'] = $id_field_config;
+            $new_fields[$fieldName]['id_storage_config'] = 'field.storage.' . $id_storage_config;
+            $new_fields[$fieldName]['id_field_config'] = 'field.field.' . $id_field_config;
           }
       }
       elseif (empty($new_fields[$fieldName]['value'])) {
@@ -247,66 +251,40 @@ class ManageFieldsConfig extends ControllerBase {
     return $field;
   }
   
-  protected function Build__taxonomy($field_type, $entityType, $bundle, $label, $description) {
-    $vocabulary = $field_type['settings']['handler_settings']["target_bundles"];
-    $target_bundles = [];
-    foreach ($field_type["settings"]["allowed_values"] as $voc) {
-      $target_bundles[$voc["vocabulary"]] = $voc["vocabulary"];
+  protected function Build__taxonomy($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key) {
+    $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
+    // Overrides entity_reference
+    $this->addDependencyTermReference($configs[0], 'field_storage_config', $field_type);
+    $this->addDependencyTermReference($configs[1], 'field_config', $field_type);
+    return $configs;
+  }
+  
+  protected function addDependencyTermReference(array &$config, string $type, array $field_type) {
+    if ($type == 'field_storage_config') {
+      $config['type'] = 'entity_reference';
+      $config['settings']['target_type'] = 'taxonomy_term';
+      $config['module'] = 'core';
     }
-    $storage = [
-      'field_name' => $field_type['field_name'],
-      'entity_type' => $entityType,
-      'type' => 'entity_reference',
-      'settings' => [
-        'target_type' => 'taxonomy_term'
-      ],
-      'cardinality' => $field_type['cardinality'],
-      'translatable' => $field_type['translatable'],
-      'indexes' => [
-        'target_id' => [
-          'target_id'
-        ]
-      ],
-      'foreign keys' => [
-        'target_id' => [
-          'table' => 'taxonomy_term_field_data',
-          'columns' => [
-            'target_id' => 'tid'
-          ]
-        ]
-      ]
-    ];
-    
-    $config = [
-      'field_name' => $field_type['field_name'],
-      'field_type' => "entity_reference",
-      'entity_type' => $entityType,
-      'bundle' => $bundle,
-      'label' => $label,
-      'description' => $description,
-      'required' => FALSE,
-      'settings' => [
-        'handler' => 'default',
+    if ($type == 'field_config') {
+      $target_bundles = [];
+      if ($field_type['settings']['allowed_values']) {
+        foreach ($field_type['settings']['allowed_values'] as $item) {
+          $target_bundles[$item['vocabulary']] = $item['vocabulary'];
+        }
+      }
+      $config['field_type'] = 'entity_reference';
+      $config['settings'] = [
+        'handler' => 'default:taxonomy_term',
         'handler_settings' => [
           'target_bundles' => $target_bundles
         ]
-      ],
-      'widget' => [
-        'type' => 'entity_reference_autocomplete',
-        'settings' => []
-      ]
-    ];
-    
-    return [
-      $storage,
-      $config
-    ];
+      ];
+    }
   }
   
   protected function changeFieldEntity(&$field, $entity_type) {
     $field["entity_type"] = $entity_type;
     $bundles = [];
-    
     foreach ($field["field_type"]["bundles"]["multifield"] as $bundle_id) {
       if (ParagraphsType::load($bundle_id)) {
         $bundles[] = $bundle_id;
@@ -361,7 +339,28 @@ class ManageFieldsConfig extends ControllerBase {
   protected function createFieldForMultifield($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key) {
     $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
     // override
+    $this->addDependencyMultifield($configs[0], 'field_storage_config', $field_type, $fieldName);
+    $this->addDependencyMultifield($configs[1], 'field_config', $field_type, $fieldName);
     return $configs;
+  }
+  
+  protected function addDependencyMultifield(array &$config, string $type, array $field_type, $fieldName) {
+    if ($type == 'field_storage_config') {
+      $config['settings']['target_type'] = 'paragraph';
+      $config['module'] = 'entity_reference_revisions';
+      $config['type'] = 'entity_reference_revisions';
+    }
+    if ($type == 'field_config') {
+      $config['field_type'] = 'entity_reference_revisions';
+      $config['settings'] = [
+        'handler' => 'default:paragraph',
+        'handler_settings' => [
+          "target_bundles" => [
+            $fieldName => $fieldName
+          ]
+        ]
+      ];
+    }
   }
   
   protected function create_or_select_paragraph_type($id, $label, $description) {
@@ -438,9 +437,43 @@ class ManageFieldsConfig extends ControllerBase {
         $keyToDel = array_search("entityreference", $config["dependencies"]["module"]);
         if ($keyToDel !== false) {
           unset($config["dependencies"]["module"][$keyToDel]);
-          $config["dependencies"]["module"] = array_values($config["dependencies"]["module"]);
         }
       }
+    }
+  }
+  
+  protected function Build__interger($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key) {
+    $field_type["type"] = "integer";
+    $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
+    // Overrride
+    $this->overrideDependencyInterger($configs[0], 'field_storage_config', $field_type, $field);
+    $this->overrideDependencyInterger($configs[1], 'field_config', $field_type, $field);
+    return $configs;
+  }
+  
+  /**
+   * Permet de surcharger les dependances pour le type de champs integer.
+   *
+   * @param array $config
+   * @param string $type
+   * @param array $field_type
+   */
+  protected function overrideDependencyInterger(array &$config, string $type, $field_type, $field) {
+    if ($type == 'field_storage_config') {
+      $config['module'] = 'core';
+    }
+    if ($type == 'field_config') {
+      $config['settings'] = [
+        'max' => $field['value']['settings']['max'],
+        'min' => $field['value']['settings']['min'],
+        'prefix' => $field['value']['settings']['prefix'],
+        'suffix' => $field['value']['settings']['suffix']
+      ];
+    }
+    if (!empty($config["dependencies"]["module"]))
+      $keyToDel = array_search("number", $config["dependencies"]["module"]);
+    if ($keyToDel !== false) {
+      unset($config["dependencies"]["module"][$keyToDel]);
     }
   }
   
@@ -492,12 +525,12 @@ class ManageFieldsConfig extends ControllerBase {
   protected function Build__colorfield($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key) {
     $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
     // Overrride
-    $this->overrrideDependencycolorfield($configs[0], 'field_storage_config', $field_type);
-    $this->overrrideDependencycolorfield($configs[1], 'field_config', $field_type);
+    $this->overrideDependencycolorfield($configs[0], 'field_storage_config', $field_type);
+    $this->overrideDependencycolorfield($configs[1], 'field_config', $field_type);
     return $configs;
   }
   
-  protected function overrrideDependencycolorfield(array &$config, string $type, $field_type) {
+  protected function overrideDependencycolorfield(array &$config, string $type, $field_type) {
     // On retire le module "colorfield"
     if (!empty($config["dependencies"]["module"])) {
       $keyToDel = array_search("colorfield", $config["dependencies"]["module"]);
@@ -523,7 +556,7 @@ class ManageFieldsConfig extends ControllerBase {
         $module2 = "node";
         break;
       case "paragraph":
-        $dependence_field_config = "paragraphs.$bundle_key.$bundle";
+        $dependence_field_config = "paragraphs.paragraphs_type.$bundle";
         $module = "paragraphs";
         $module2 = null;
         break;
@@ -541,6 +574,7 @@ class ManageFieldsConfig extends ControllerBase {
         ],
         'config' => []
       ],
+      'module' => $module,
       'entity_type' => $entity_type,
       'field_name' => $fieldName,
       'id' => $id_storage_config,
@@ -548,7 +582,8 @@ class ManageFieldsConfig extends ControllerBase {
       'status' => (int) $field_type['active'],
       'translatable' => (int) $field_type['translatable'],
       'type' => $field_type['type'],
-      'settings' => []
+      'settings' => [],
+      'persist_with_no_fields' => false
     ] : [];
     $field_config = !$this->entityTypeManager()->getStorage('field_config')->load($id_field_config) ? [
       "bundle" => $bundle,
