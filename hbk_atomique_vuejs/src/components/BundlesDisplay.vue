@@ -141,7 +141,10 @@ import Tag from "primevue/tag";
 import { useToast } from "primevue/usetoast";
 
 const props = defineProps(["bundles", "base_table", "bundle_key", "entity_type_id", "entity_key_id", "entity_key_label"]);
-
+/**
+ * Ce gap permet de ne pas ecraser les paragraphes.
+ */
+const gap_paragraph = 100;
 /**
  * Contient les definitions des
  */
@@ -158,13 +161,32 @@ const numbersBundles = computed(() => {
 const importOneContent = (data, tab) => {
   console.log("importOneContent data : ", data, "\n id : ", data.id, props);
   importEntity(tab.id, data.id).then((entity) => {
-    buildAndCreateEntity(entity, tab)
-      .then(() => {
-        toast.add({ severity: "success", summary: "Le contenu a été importer ", detail: "Contenu creer ou mise à jour :", life: 8000 });
-      })
-      .catch(() => {
-        toast.add({ severity: "error", summary: "Error lors de la creation du contenu", detail: "Errors", life: 8000 });
-      });
+    //import des sous entites multifields.
+    if (props.entity_type_id == "multifield") {
+      console.log("data :: ", data, "\n entity : ", entity, "\n tab : ", tab);
+      if (entity[tab.id]["und"].length > 0)
+        for (const id in entity[tab.id]["und"]) {
+          const sub_entity = { parent_type: "node", parent_field_name: tab.id, type: tab.id, ...entity[tab.id]["und"][id] };
+          // Ajout du gap.
+          sub_entity.id = parseInt(sub_entity.id) + gap_paragraph;
+          console.log("sub_entity :: ", sub_entity);
+          buildAndCreateEntity(sub_entity, tab)
+            .then(() => {
+              toast.add({ severity: "success", summary: "Le contenu a été importer ", detail: "Contenu creer ou mise à jour :", life: 8000 });
+            })
+            .catch(() => {
+              toast.add({ severity: "error", summary: "Error lors de la creation du contenu", detail: "Errors", life: 8000 });
+            });
+        }
+      //toast.add({ severity: "warn", summary: "L'import doit se faire directement par le contenu parent", detail: "Alert", life: 8000 });
+    } else
+      buildAndCreateEntity(entity, tab)
+        .then(() => {
+          toast.add({ severity: "success", summary: "Le contenu a été importer ", detail: "Contenu creer ou mise à jour :", life: 8000 });
+        })
+        .catch(() => {
+          toast.add({ severity: "error", summary: "Error lors de la creation du contenu", detail: "Errors", life: 8000 });
+        });
   });
 };
 
@@ -337,8 +359,9 @@ const ImportContentNotExit = (tab) => {
             toast.add({ severity: "success", summary: "Tous les contenus ont été crees ", detail: "Contenu creer ou mise à jour :", life: 8000 });
             tab.pagination.run = false;
           })
-          .catch(() => {
+          .catch((er) => {
             // tab.pagination.start = start + length;
+            console.log("Promise.all er :: ", er);
             tab.pagination.run = false;
             console.log("all entities creates, with erros");
           });
@@ -352,35 +375,48 @@ const ImportContentNotExit = (tab) => {
       toast.add({ severity: "error", summary: "Une erreur s'est produite", detail: "Message Content", life: 8000 });
     });
 };
-
-const buildMultiFieldDatas = (multifieldDatas, field_config) => {
+/**
+ * On verifie si le paragraphe existe et on retourne l'id.
+ * Sinon erreur
+ * @param multifieldDatas
+ * @param field_config
+ */
+const buildMultiFieldDatas = (multifieldDatas) => {
   return new Promise((resolv, reject) => {
-    console.log("multifieldDatas :: ", multifieldDatas, "\n : ", field_config);
-    /**
-     * Ce gap permet de ne pas ecraser les paragraphes.
-     */
-    const gap_paragraph = 100;
-
-    const getFieldConfigParagraph = () => {
-      //
-    };
-    getFieldConfigParagraph();
-    const createParagrph = (values) => {
-      reject();
-      const entity = { parent_type: field_config.entity_type, parent_field_name: field_config.field_name, type: field_config.field_name };
-      for (const fieldName in values) {
-        if (fieldName == "id") {
-          entity.id = parseInt(values.id) + gap_paragraph;
-        } else {
-          //
-        }
-      }
+    const CheckParagrphExist = (values) => {
+      return new Promise((url_resolv, url_reject) => {
+        const paragraph_id = parseInt(values.id) + gap_paragraph;
+        const url = config.getCustomDomain() + "/apivuejs/canonical-entity/paragraph/" + paragraph_id;
+        config
+          .get(url)
+          .then((result) => {
+            if (result.data) {
+              url_resolv(paragraph_id);
+            } else {
+              url_reject("Impossible de recuperer les données du paragraphe");
+            }
+          })
+          .catch(() => {
+            url_reject("Impossible de recuperer les données du paragraphe");
+          });
+      });
     };
     const traiterTableau = async (Datas) => {
       const newValues = [];
-      for (const values of Datas) {
-        newValues.push(await createParagrph(values));
-      }
+      if (Datas.und)
+        for (const values of Datas.und) {
+          if (values.id) {
+            await CheckParagrphExist(values)
+              .then((id) => {
+                newValues.push(id);
+              })
+              .catch((er) => {
+                reject(er);
+              });
+          } else {
+            reject("Impossible de recuperer les données du paragraphe");
+          }
+        }
       return newValues;
     };
     resolv(traiterTableau(multifieldDatas));
@@ -403,7 +439,7 @@ const buildAndCreateEntity = async (entity, tab) => {
      * @param field_config
      */
     const retriveDataInField = (values, field_config, fieldD7) => {
-      return new Promise((resolv, reject) => {
+      return new Promise((retrive_resolv, retrive_reject) => {
         const datas = [];
         if (values.und) {
           // On importe les images si ele n'existe pas.
@@ -423,15 +459,15 @@ const buildAndCreateEntity = async (entity, tab) => {
                     });
                   }
                 });
-                resolv(datas);
+                retrive_resolv(datas);
               })
               .catch(() => {
-                reject("Impossible de recuperer les images");
+                retrive_reject("Impossible de recuperer les images");
               });
           }
           // On cree les entites de reference s'ils n'existent pas.
           else if (field_config.field_type == "entity_reference") {
-            console.log("Entity_reference : ", field_config, "\n Values : ", values);
+            // console.log("Entity_reference : ", field_config, "\n Values : ", values);
             // cas des tags
             if (field_config.settings.handler == "default:taxonomy_term") {
               config
@@ -447,13 +483,20 @@ const buildAndCreateEntity = async (entity, tab) => {
                         target_id: term.tid,
                       });
                     else {
-                      reject("Le terme taxo : '" + term.tid + "' du vocabulaire '" + JSON.stringify(field_config.settings.handler_settings.target_bundles) + "' n'existe pas");
+                      // On desactive cette partie pour le moment.
+                      // retrive_reject(
+                      //   "Le terme taxo : '" + term.tid + "' du vocabulaire '" + JSON.stringify(field_config.settings.handler_settings.target_bundles) + "' n'existe pas"
+                      // );
+                      console.log(
+                        "error : ",
+                        "Le terme taxo : '" + term.tid + "' du vocabulaire '" + JSON.stringify(field_config.settings.handler_settings.target_bundles) + "' n'existe pas"
+                      );
                     }
                   });
-                  resolv(datas);
+                  retrive_resolv(datas);
                 })
                 .catch(() => {
-                  reject("Une erreur s'est produite lors de la verification des termes");
+                  retrive_reject("Une erreur s'est produite lors de la verification des termes");
                 });
             } else if (field_config.settings.handler == "views" || field_config.settings.handler == "default:node") {
               // pour l'instant, on n'a pas trouver comment verifier les données pour ce cas.
@@ -462,13 +505,25 @@ const buildAndCreateEntity = async (entity, tab) => {
                   target_id: entity_reference.target_id,
                 });
               });
-              resolv(datas);
-            } else reject("L'entite de reference n'est pas encore traiter");
+              retrive_resolv(datas);
+            } else retrive_reject("L'entite de reference n'est pas encore traiter");
           }
-          // on doit creer les paragraphes et à la suite, recuperer les ids et remplir le champs.
+          // Les paragraphes doivent etre creer, on verifie s'ils existent, et on retourne l'id.
           else if (fieldD7.type_field == "multifield") {
-            buildMultiFieldDatas(values, field_config);
-            reject("le type multifield n'est pas encore traiter");
+            buildMultiFieldDatas(values)
+              .then((result) => {
+                if (result.length > 0)
+                  result.forEach((paragraph_id) => {
+                    datas.push({
+                      target_id: paragraph_id,
+                      target_revision_id: paragraph_id,
+                    });
+                  });
+                retrive_resolv(datas);
+              })
+              .catch((er) => {
+                retrive_reject(er);
+              });
           } else {
             values.und.forEach((item) => {
               const data = {};
@@ -480,11 +535,11 @@ const buildAndCreateEntity = async (entity, tab) => {
               if (item.summary) data.summary = item.summary;
               datas.push(data);
             });
-            resolv(datas);
+            retrive_resolv(datas);
           }
         } else {
           console.log("Erreur, contenu du champs ", values, "\n Information sur le champs : ", field_config);
-          reject("Impossible de recuperer les données");
+          retrive_reject("Impossible de recuperer les données");
         }
       });
     };
@@ -510,7 +565,9 @@ const buildAndCreateEntity = async (entity, tab) => {
             const fieldD7 = getInfosAboutD7filed(field.field_config.field_name);
             retriveDataInField(entity[field.field_config.field_name], field.field_config, fieldD7)
               .then((datas) => {
-                console.log(field.field_config.field_name, " :: ", datas);
+                // if ("field_popup" == field.field_config.field_name) {
+                //   console.log(field.field_config.field_name, " :: ", datas);
+                // }
                 contents[field.field_config.field_name] = datas;
                 id++;
                 resolv(loopFields(id, contents));
@@ -529,9 +586,10 @@ const buildAndCreateEntity = async (entity, tab) => {
     };
     loopFields(0, {})
       .then((contents) => {
-        console.log("contents : ", contents);
+        var entity_type_id = props.entity_type_id;
+        if (props.entity_type_id == "multifield") entity_type_id = "paragraph";
         config
-          .post(config.getCustomDomain() + "/apivuejs/save-entity/" + props.entity_type_id, { ...values, ...contents })
+          .post(config.getCustomDomain() + "/apivuejs/save-entity/" + entity_type_id, { ...values, ...contents })
           .then((result) => {
             console.log("result : ", result);
             content_create(result);
@@ -542,6 +600,7 @@ const buildAndCreateEntity = async (entity, tab) => {
           });
       })
       .catch((er) => {
+        console.log("loopFields er :: ", er);
         toast.add({ severity: "error", summary: "Erreur de traitement de l'entité", detail: er, life: 8000 });
         error_create_content(er);
       });
@@ -562,6 +621,17 @@ const buildBaseInfoForEntity = (entity) => {
         language: entity.language,
         status: entity.status,
       };
+      break;
+    case "multifield":
+      values = {
+        parent_type: entity.parent_type,
+        parent_field_name: entity.parent_field_name,
+        type: entity.type,
+      };
+      if (entity.id) {
+        values.id = entity.id;
+      }
+
       break;
     case "taxonomy_term":
       values = {
