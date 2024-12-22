@@ -246,6 +246,8 @@ const CheckConfig = (tab) => {
         // }
         if ("multifield" == props.entity_type_id) {
           config_id = "paragraph.type." + tab.id;
+        } else if ("bean" == props.entity_type_id) {
+          config_id = "block_content.type." + tab.id;
         }
         const datas = { config_id: config_id, datas: result.data[tab.id] ? result.data[tab.id] : result.data };
         config.post(url, datas).then((resultD10) => {
@@ -305,6 +307,9 @@ const CreateFieldsNotExist = (tab) => {
   else if (props.entity_type_id == "multifield") {
     bundle_key = "type";
     entity_type_id = "paragraph";
+  } else if (props.entity_type_id == "bean") {
+    //bundle_key = "type";
+    entity_type_id = "block_content";
   }
   config
     .post(config.getCustomDomain() + "/admin/migration-hbk-auto/generate-fields", {

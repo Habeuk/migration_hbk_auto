@@ -66,12 +66,19 @@ class ManageFieldsConfig extends ControllerBase {
           ] = $this->Build__text_long($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
           
           break;
+        case 'list_text':
+          $field_type["type"] = "list_string";
+          [
+            $values_storage_config,
+            $values_field_config
+          ] = $this->Build__list_text($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
+          break;
         case 'list_boolean':
           $field_type["type"] = "boolean";
           [
             $values_storage_config,
             $values_field_config
-          ] = $this->Build__list_element($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
+          ] = $this->Build__list_boolean($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
           $values_field_config["settings"]["on_label"] = $values_field_config["settings"]["on_label"] ?? "On";
           $values_field_config["settings"]["off_label"] = $values_field_config["settings"]["off_label"] ?? "Off";
           break;
@@ -80,7 +87,7 @@ class ManageFieldsConfig extends ControllerBase {
           [
             $values_storage_config,
             $values_field_config
-          ] = $this->Build__list_element($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
+          ] = $this->Build__list_integer($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
           break;
         case "image":
           [
@@ -483,24 +490,55 @@ class ManageFieldsConfig extends ControllerBase {
     return $configs;
   }
   
-  protected function Build__list_element($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key) {
-    /**
-     *
-     * @var \Drupal\field\Entity\FieldStorageConfig $storage
-     */
-    $storage = $this->entityTypeManager()->getStorage('field_storage_config')->load($id_storage_config);
-    if ($storage && $storage->get("cardinality") != -1) {
-      $storage->setCardinality(-1);
-      $storage->save();
-    }
-    $field_type["cardinality"] = "-1";
+  protected function Build__list_text($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key) {
     $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
-    $this->deleteDependency("list", $configs[0]);
-    $this->deleteDependency("list", $configs[1]);
+    // override configs
+    $this->overrideDependency__list_text($configs[0], 'field_storage_config', $field_type);
+    $this->overrideDependency__list_text($configs[1], 'field_config', $field_type);
     return $configs;
   }
   
-  protected function deleteDependency($dependency, &$configs) {
+  /**
+   *
+   * @param array $config
+   * @param string $type
+   * @param array $field_type
+   */
+  protected function overrideDependency__list_text(array &$config, string $type, array $field_type) {
+    if (!empty($config["dependencies"]["module"])) {
+      $keyToDel = array_search("list", $config["dependencies"]["module"]);
+      if ($keyToDel !== false) {
+        unset($config["dependencies"]["module"][$keyToDel]);
+      }
+    }
+    if ($type == 'field_storage_config') {
+      $config["dependencies"]["module"][] = 'options';
+      $config['module'] = 'options';
+    }
+    if ($type == 'field_config') {
+      $config['field_type'] = 'list_string';
+      foreach ($field_type['settings']['allowed_values'] as $value => $text) {
+        $config['settings']['allowed_values'][$value] = $text;
+      }
+      $config['settings']['allowed_values_function'] = $field_type['settings']['allowed_values_function'];
+    }
+  }
+  
+  protected function Build__list_boolean($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key) {
+    $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
+    $this->deleteDependency($configs[0], 'field_storage_config');
+    $this->deleteDependency($configs[1], 'field_config');
+    return $configs;
+  }
+  
+  protected function Build__list_integer($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key) {
+    $configs = $this->Build__base($field_type, $entity_type, $fieldName, $id_storage_config, $bundle, $field, $id_field_config, $bundle_key);
+    $this->deleteDependency($configs[0], 'field_storage_config');
+    $this->deleteDependency($configs[1], 'field_config');
+    return $configs;
+  }
+  
+  protected function deleteDependency(&$configs, $type) {
     if (!empty($configs["dependencies"]["module"])) {
       $keyToDel = array_search("list", $configs["dependencies"]["module"]);
       if ($keyToDel !== false) {
@@ -546,6 +584,18 @@ class ManageFieldsConfig extends ControllerBase {
       $config['field_type'] = 'color_theme_field_type';
   }
   
+  /**
+   *
+   * @param array $field_type
+   * @param string $entity_type
+   * @param string $fieldName
+   * @param string $id_storage_config
+   * @param string $bundle
+   * @param array $field
+   * @param string $id_field_config
+   * @param string $bundle_key
+   * @return []
+   */
   protected function Build__base(array $field_type, string $entity_type, string $fieldName, string $id_storage_config, string $bundle, array $field, string $id_field_config, $bundle_key = "type") {
     // on ajuste certains parametre.
     $dependence_field_config = "$entity_type.$bundle_key.$bundle";
