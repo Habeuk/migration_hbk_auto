@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Stephane888\DrupalUtility\HttpResponse;
 use Drupal\Component\Serialization\Json;
 use Stephane888\Debug\ExceptionExtractMessage;
+use Stephane888\Debug\ExceptionDebug;
 use Drupal\migration_hbk_auto\Services\ManageNodesConfig;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\File\FileSystemInterface;
@@ -72,37 +73,49 @@ final class ManageConfigController extends ControllerBase {
          *
          * @var \Drupal\Core\File\FileSystem $filesystem
          */
-        $filesystem = \Drupal::service('file_system');
+        // $filesystem = \Drupal::service('file_system');
         /** @var \Drupal\file\FileRepository $fileRepository */
         // $fileRepository = \Drupal::service('file.repository');
         foreach ($payload['files'] as $field) {
-          $file = File::load($field['fid']);
-          if (!$file) {
-            $file_info = $this->getBasePathFromUri($field['uri']);
-            if ($filesystem->prepareDirectory($file_info['base_path'], FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS)) {
-              $array_uri = \explode("://", $field['uri']);
-              // Save the file.
-              $url = $payload['base_url'] . "/" . $array_uri[1];
-              $data = file_get_contents($url);
-              if (!empty($data)) {
-                $newUri = $filesystem->saveData($data, $field['uri']);
-                // $file = $fileRepository->writeData($data, $field['uri']);
-                $file = File::create([
-                  'fid' => $field['fid'],
-                  'uri' => $newUri,
-                  'filename' => $field['filename']
-                ]);
-                $file->setOwnerId($this->currentUser()->id());
-                $file->setPermanent();
-                $file->save();
-              }
-              else
-                throw new \Exception("Le fichier n'existe plus");
-            }
-            else
-              throw new \Exception("Une erreur s'est produite, le fichier n'a pas pu etre creer");
-            //
-          }
+          $file = ManageNodesConfig::CheckAndImportImageFromD7($field['fid']);
+          // if (!$file) {
+          // $file_info = $this->getBasePathFromUri($field['uri']);
+          // if ($filesystem->prepareDirectory($file_info['base_path'],
+          // FileSystemInterface::CREATE_DIRECTORY |
+          // FileSystemInterface::MODIFY_PERMISSIONS)) {
+          // $array_uri = \explode("://", $field['uri']);
+          // // Save the file.
+          // $url = $payload['base_url'] . "/" . rawurlencode($array_uri[1]);
+          // // Les images sont dans files
+          // // $data = file_get_contents($url);
+          // $data = $this->http_get_contents($url);
+          // // Les images sont dans /styles/kitchen_image_hp/public
+          // if (empty($data)) {
+          // $url = $payload['base_url'] . "/styles/kitchen_image_hp/public/" .
+          // rawurlencode($array_uri[1]);
+          // $data = $this->http_get_contents($url);
+          // }
+          // if (!empty($data)) {
+          // $newUri = $filesystem->saveData($data, $field['uri']);
+          // // $file = $fileRepository->writeData($data, $field['uri']);
+          // $file = File::create([
+          // 'fid' => $field['fid'],
+          // 'uri' => $newUri,
+          // 'filename' => $field['filename']
+          // ]);
+          // $file->setOwnerId($this->currentUser()->id());
+          // $file->setPermanent();
+          // $file->save();
+          // }
+          // else
+          // throw new ExceptionDebug("Le fichier n'a pas pu etre telecharger",
+          // $url, 404);
+          // }
+          // else
+          // throw new \Exception("Une erreur s'est produite, le fichier n'a pas
+          // pu etre creer");
+          // //
+          // }
           $results[$file->id()] = [
             'id' => $file->id(),
             'filename' => $file->getFilename()
@@ -110,6 +123,11 @@ final class ManageConfigController extends ControllerBase {
         }
         return HttpResponse::response($results);
       }
+    }
+    catch (ExceptionDebug $e) {
+      $results['errors'] = ExceptionExtractMessage::errorAll($e);
+      $results['file_not_find'] = $e->getContentToDebug();
+      return HttpResponse::response($results, $e->getCode(), $e->getMessage());
     }
     catch (\Exception $e) {
       $results['errors'] = ExceptionExtractMessage::errorAll($e);
@@ -179,5 +197,14 @@ final class ManageConfigController extends ControllerBase {
       'base_path' => $basePath,
       'filename' => $filename
     ];
+  }
+  
+  protected function http_get_contents($url) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $output = curl_exec($ch);
+    curl_close($ch);
+    return $output;
   }
 }
