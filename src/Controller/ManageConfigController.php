@@ -121,8 +121,8 @@ final class ManageConfigController extends ControllerBase {
             'filename' => $file->getFilename()
           ];
         }
-        return HttpResponse::response($results);
       }
+      return HttpResponse::response($results);
     }
     catch (ExceptionDebug $e) {
       $results['errors'] = ExceptionExtractMessage::errorAll($e);

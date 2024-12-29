@@ -159,7 +159,7 @@ const numbersBundles = computed(() => {
 });
 
 const importOneContent = (data, tab) => {
-  console.log("importOneContent data : ", data, "\n id : ", data.id, props);
+  //console.log("importOneContent data : ", data, "\n id : ", data.id, props);
   importEntity(tab.id, data.id).then((entity) => {
     //import des sous entites multifields.
     if (props.entity_type_id == "multifield") {
@@ -511,7 +511,7 @@ const buildAndCreateEntity = async (entity, tab) => {
                 });
               });
               retrive_resolv(datas);
-            } else retrive_reject("L'entite de reference n'est pas encore traiter");
+            } else retrive_reject("L'entite de reference n'est pas encore traiter : " + JSON.stringify(field_config));
           }
           // Les paragraphes doivent etre creer, on verifie s'ils existent, et on retourne l'id.
           else if (fieldD7.type_field == "multifield") {
