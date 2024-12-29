@@ -445,6 +445,9 @@ const buildAndCreateEntity = async (entity, tab) => {
      */
     const retriveDataInField = (values, field_config, fieldD7) => {
       return new Promise((retrive_resolv, retrive_reject) => {
+        const isEmpty = (obj) => {
+          return Object.keys(obj).length === 0;
+        };
         const datas = [];
         if (values.und) {
           // On importe les images si ele n'existe pas.
@@ -538,6 +541,15 @@ const buildAndCreateEntity = async (entity, tab) => {
               if (item.alt) data.alt = item.alt;
               if (item.format) data.format = item.format;
               if (item.summary) data.summary = item.summary;
+              if (item.rgb) {
+                data.color = item.rgb;
+                data.name = "";
+              }
+              // S'il nya pas de valeur on affiche une erreur.
+              if (isEmpty(data)) {
+                console.log(field_config);
+                retrive_reject("Le contenu de la valeur est n'est pas traiter : " + JSON.stringify(item));
+              }
               datas.push(data);
             });
             retrive_resolv(datas);
