@@ -653,9 +653,10 @@ const buildBaseInfoForEntity = (entity) => {
     case "taxonomy_term":
       values = {
         ...values,
-        description: entity.description,
+        description: [{ value: entity.description, format: "full_html" }],
         vid: entity.vocabulary_machine_name,
         weight: entity.weight,
+        parent: [{ target_id: entity.parent.und[0].target_id }],
       };
       break;
     default:
