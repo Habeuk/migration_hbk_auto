@@ -532,6 +532,34 @@ const buildAndCreateEntity = async (entity, tab) => {
               .catch((er) => {
                 retrive_reject(er);
               });
+          } else if (field_config.field_type == "google_map_field") {
+            values.und.forEach((item) => {
+              const data = {};
+              if (item.lat) {
+                data.lat = item.lat;
+              }
+              if (item.lon) {
+                data.lon = item.lon;
+                // On definit la valeur par defaut provenant de configuration.
+                if (field_config.default_value && field_config.default_value[0] && field_config.default_value[0].marker_icon) {
+                  data.marker_icon = field_config.default_value[0].marker_icon;
+                }
+              }
+              if (item.map_height) {
+                data.height = item.map_height;
+              }
+              if (item.map_width) {
+                data.width = item.map_width;
+              }
+              if (item.name) {
+                data.name = item.name;
+              }
+              if (item.zoom) {
+                data.zoom = item.zoom;
+              }
+              datas.push(data);
+            });
+            retrive_resolv(datas);
           } else {
             values.und.forEach((item) => {
               const data = {};
