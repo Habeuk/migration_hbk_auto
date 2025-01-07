@@ -435,7 +435,7 @@ const buildMultiFieldDatas = (multifieldDatas) => {
  */
 const buildAndCreateEntity = async (entity, tab) => {
   return new Promise((content_create, error_create_content) => {
-    const baseInfo = buildBaseInfoForEntity(entity);
+    const baseInfo = buildBaseInfoForEntity(entity, tab);
     const entity_title = baseInfo.entity_title;
     const values = baseInfo.base_entity;
     /**
@@ -655,6 +655,8 @@ const buildAndCreateEntity = async (entity, tab) => {
 const buildBaseInfoForEntity = (entity) => {
   const entity_title = entity[props.entity_key_label];
   let values = { [props.entity_key_label]: entity_title, [props.entity_key_id]: entity[props.entity_key_id] };
+  // Certains entity ont un champs metafields, il faut le remplir.
+
   switch (props.entity_type_id) {
     case "node":
       values = {
@@ -693,6 +695,10 @@ const buildBaseInfoForEntity = (entity) => {
   return { base_entity: values, entity_title: entity_title };
 };
 
+/**
+ *
+ * @param tab
+ */
 const ManageImportContent = (tab) => {
   const start = tab.pagination.start;
   const length = tab.pagination.length;
@@ -715,6 +721,7 @@ const ManageImportContent = (tab) => {
     });
   }
 };
+
 /**
  * Importer les contenus.
  * @param bundle
@@ -735,6 +742,12 @@ const importEntities = (bundle, start, length) => {
       });
   });
 };
+
+/**
+ *
+ * @param bundle
+ * @param entity_id
+ */
 const importEntity = (bundle, entity_id) => {
   return new Promise((resolv, reject) => {
     config
