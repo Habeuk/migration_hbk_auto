@@ -79,6 +79,10 @@ Ce fichier permet d'affichager toutes les configurations.
             </div>
             <div class="row">
               <div class="col">
+                <div class="flex items-center gap-2">
+                  <Checkbox v-model="tab.pagination.continue" binary :inputId="tab.id + '_continue'" />
+                  <label :for="tab.id + '_continue'" class="text-sm">Continue</label>
+                </div>
                 <Button
                   :label="'Importer les contenus : ' + tab.pagination.start + '/' + tab.count_entities.to_import"
                   severity="success"
@@ -131,6 +135,7 @@ import AccordionHeader from "primevue/accordionheader";
 import AccordionContent from "primevue/accordioncontent";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
+import Checkbox from "primevue/checkbox";
 import Dialog from "primevue/dialog";
 import Toast from "primevue/toast";
 import DataTable from "primevue/datatable";
@@ -203,7 +208,7 @@ const buildBundle = () => {
         messagesConfig: [],
         messagesFields: [],
         fields: { d10: [], d7: [], errors: [], extra_fields: [] },
-        pagination: { start: 0, length: 2, run: false },
+        pagination: { start: 0, length: 2, run: false, continue: false },
         count_entities: {
           to_import: 0,
           imported: 0,
@@ -363,16 +368,22 @@ const ImportContentNotExit = (tab) => {
             console.log("all entities creates");
             toast.add({ severity: "success", summary: "Tous les contenus ont été crees ", detail: "Contenu creer ou mise à jour :", life: 8000 });
             tab.pagination.run = false;
+            if (tab.pagination.continue)
+              setTimeout(() => {
+                ImportContentNotExit(tab);
+              }, 1500);
           })
           .catch((er) => {
             // tab.pagination.start = start + length;
             console.log("Promise.all er :: ", er);
             tab.pagination.run = false;
+            tab.pagination.continue = false;
             console.log("all entities creates, with erros");
           });
       } else {
-        toast.add({ severity: "warn", summary: "Tous les contenus ont deja été importés ", detail: "Contenu deja importés", life: 8000 });
+        toast.add({ severity: "success", summary: "Tous les contenus ont deja été importés ", detail: "Contenu deja importés", life: 8000 });
         tab.pagination.run = false;
+        tab.pagination.continue = false;
       }
     })
     .catch((er) => {
@@ -435,7 +446,7 @@ const buildMultiFieldDatas = (multifieldDatas) => {
  */
 const buildAndCreateEntity = async (entity, tab) => {
   return new Promise((content_create, error_create_content) => {
-    const baseInfo = buildBaseInfoForEntity(entity, tab);
+    const baseInfo = buildBaseInfoForEntity(entity);
     const entity_title = baseInfo.entity_title;
     const values = baseInfo.base_entity;
     /**
@@ -656,7 +667,16 @@ const buildBaseInfoForEntity = (entity) => {
   const entity_title = entity[props.entity_key_label];
   let values = { [props.entity_key_label]: entity_title, [props.entity_key_id]: entity[props.entity_key_id] };
   // Certains entity ont un champs metafields, il faut le remplir.
-
+  /**
+   * Les matatags sont deja importé, on verra cela plus tard.
+   */
+  // if (tab.fields.d10) {
+  //   tab.fields.d10.forEach((field) => {
+  //     if (field.field_config && field.field_config.field_type == "metatag" && entity.metatags && (entity.metatags.und || entity.metatags.fr)) {
+  //       //
+  //     }
+  //   });
+  // }
   switch (props.entity_type_id) {
     case "node":
       values = {
