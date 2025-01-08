@@ -440,279 +440,317 @@ const buildMultiFieldDatas = (multifieldDatas) => {
 };
 
 /**
+ * Return true if object is empty.
+ * @param obj
+ */
+const isEmptyObject = (obj) => {
+  return Object.keys(obj).length === 0;
+};
+
+/**
  * Il faudra eviter d'envoyer une masse importante de données.
- * @param entity
+ *
+ * Construction des champs, lors de cette construction on peut avoir besoin de creer d'autres données nessaire et recupere l'id final.
+ * On ferra cela dans une boucle personnalisé afin de controller le processus.
  * @param tab
+ *
  */
 const buildAndCreateEntity = async (entity, tab) => {
   return new Promise((content_create, error_create_content) => {
-    const baseInfo = buildBaseInfoForEntity(entity);
-    const entity_title = baseInfo.entity_title;
-    const values = baseInfo.base_entity;
-    /**
-     * Recupere les données par champs.
-     * @param values
-     * @param field_config
-     */
-    const retriveDataInField = (values, field_config, fieldD7) => {
-      return new Promise((retrive_resolv, retrive_reject) => {
-        const isEmpty = (obj) => {
-          return Object.keys(obj).length === 0;
-        };
-        const datas = [];
-        if (values.und) {
-          // On importe les images si ele n'existe pas.
-          if (field_config.field_type == "image") {
-            config
-              .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-files", { files: values.und, base_url: "http://you-v7.kksa/sites/you.fr/files" })
-              .then((result) => {
-                const files = result.data;
-                values.und.forEach((item) => {
-                  if (files[item.fid]) {
-                    datas.push({
-                      target_id: item.fid,
-                      alt: item.alt ? item.alt : entity_title,
-                      title: item.title,
-                      width: item.width,
-                      height: item.height,
+    buildBaseInfoForEntity(entity, tab)
+      .then((result) => {
+        const baseInfo = result;
+        const entity_title = baseInfo.entity_title;
+        const values = baseInfo.base_entity;
+        /**
+         * Recupere les données par champs.
+         * @param values
+         * @param field_config
+         */
+        const retriveDataInField = (values, field_config, fieldD7) => {
+          return new Promise((retrive_resolv, retrive_reject) => {
+            const datas = [];
+            if (values.und) {
+              // On importe les images si ele n'existe pas.
+              if (field_config.field_type == "image") {
+                config
+                  .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-files", { files: values.und, base_url: "http://you-v7.kksa/sites/you.fr/files" })
+                  .then((result) => {
+                    const files = result.data;
+                    values.und.forEach((item) => {
+                      if (files[item.fid]) {
+                        datas.push({
+                          target_id: item.fid,
+                          alt: item.alt ? item.alt : entity_title,
+                          title: item.title,
+                          width: item.width,
+                          height: item.height,
+                        });
+                      }
                     });
-                  }
-                });
-                retrive_resolv(datas);
-              })
-              .catch(() => {
-                retrive_reject("Impossible de recuperer les images");
-              });
-          }
-          // On cree les entites de reference s'ils n'existent pas.
-          else if (field_config.field_type == "entity_reference") {
-            // console.log("Entity_reference : ", field_config, "\n Values : ", values);
-            // cas des tags
-            if (field_config.settings.handler == "default:taxonomy_term") {
-              config
-                .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-terms", {
-                  terms: values.und,
-                  vocabularies: field_config.settings.handler_settings.target_bundles,
-                })
-                .then((result) => {
-                  const terms = result.data;
-                  values.und.forEach((term) => {
-                    if (terms[term.tid])
-                      datas.push({
-                        target_id: term.tid,
+                    retrive_resolv(datas);
+                  })
+                  .catch(() => {
+                    retrive_reject("Impossible de recuperer les images");
+                  });
+              }
+              // On cree les entites de reference s'ils n'existent pas.
+              else if (field_config.field_type == "entity_reference") {
+                // console.log("Entity_reference : ", field_config, "\n Values : ", values);
+                // cas des tags
+                if (field_config.settings.handler == "default:taxonomy_term") {
+                  config
+                    .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-terms", {
+                      terms: values.und,
+                      vocabularies: field_config.settings.handler_settings.target_bundles,
+                    })
+                    .then((result) => {
+                      const terms = result.data;
+                      values.und.forEach((term) => {
+                        if (terms[term.tid])
+                          datas.push({
+                            target_id: term.tid,
+                          });
+                        else {
+                          // On desactive cette partie pour le moment.
+                          // retrive_reject(
+                          //   "Le terme taxo : '" + term.tid + "' du vocabulaire '" + JSON.stringify(field_config.settings.handler_settings.target_bundles) + "' n'existe pas"
+                          // );
+                          console.log(
+                            "error : ",
+                            "Le terme taxo : '" + term.tid + "' du vocabulaire '" + JSON.stringify(field_config.settings.handler_settings.target_bundles) + "' n'existe pas"
+                          );
+                        }
                       });
-                    else {
-                      // On desactive cette partie pour le moment.
-                      // retrive_reject(
-                      //   "Le terme taxo : '" + term.tid + "' du vocabulaire '" + JSON.stringify(field_config.settings.handler_settings.target_bundles) + "' n'existe pas"
-                      // );
-                      console.log(
-                        "error : ",
-                        "Le terme taxo : '" + term.tid + "' du vocabulaire '" + JSON.stringify(field_config.settings.handler_settings.target_bundles) + "' n'existe pas"
-                      );
-                    }
+                      retrive_resolv(datas);
+                    })
+                    .catch(() => {
+                      retrive_reject("Une erreur s'est produite lors de la verification des termes");
+                    });
+                } else if (field_config.settings.handler == "views" || field_config.settings.handler == "default:node") {
+                  // pour l'instant, on n'a pas trouver comment verifier les données pour ce cas.
+                  values.und.forEach((entity_reference) => {
+                    datas.push({
+                      target_id: entity_reference.target_id,
+                    });
                   });
                   retrive_resolv(datas);
-                })
-                .catch(() => {
-                  retrive_reject("Une erreur s'est produite lors de la verification des termes");
-                });
-            } else if (field_config.settings.handler == "views" || field_config.settings.handler == "default:node") {
-              // pour l'instant, on n'a pas trouver comment verifier les données pour ce cas.
-              values.und.forEach((entity_reference) => {
-                datas.push({
-                  target_id: entity_reference.target_id,
-                });
-              });
-              retrive_resolv(datas);
-            } else retrive_reject("L'entite de reference n'est pas encore traiter : " + JSON.stringify(field_config));
-          }
-          // Les paragraphes doivent etre creer, on verifie s'ils existent, et on retourne l'id.
-          else if (fieldD7.type_field == "multifield") {
-            buildMultiFieldDatas(values)
-              .then((result) => {
-                if (result.length > 0)
-                  result.forEach((paragraph_id) => {
-                    datas.push({
-                      target_id: paragraph_id,
-                      target_revision_id: paragraph_id,
-                    });
+                } else retrive_reject("L'entite de reference n'est pas encore traiter : " + JSON.stringify(field_config));
+              }
+              // Les paragraphes doivent etre creer, on verifie s'ils existent, et on retourne l'id.
+              else if (fieldD7.type_field == "multifield") {
+                buildMultiFieldDatas(values)
+                  .then((result) => {
+                    if (result.length > 0)
+                      result.forEach((paragraph_id) => {
+                        datas.push({
+                          target_id: paragraph_id,
+                          target_revision_id: paragraph_id,
+                        });
+                      });
+                    retrive_resolv(datas);
+                  })
+                  .catch((er) => {
+                    retrive_reject(er);
                   });
+              } else if (field_config.field_type == "google_map_field") {
+                values.und.forEach((item) => {
+                  const data = {};
+                  if (item.lat) {
+                    data.lat = item.lat;
+                  }
+                  if (item.lon) {
+                    data.lon = item.lon;
+                    // On definit la valeur par defaut provenant de configuration.
+                    if (field_config.default_value && field_config.default_value[0] && field_config.default_value[0].marker_icon) {
+                      data.marker_icon = field_config.default_value[0].marker_icon;
+                    }
+                  }
+                  if (item.map_height) {
+                    data.height = item.map_height;
+                  }
+                  if (item.map_width) {
+                    data.width = item.map_width;
+                  }
+                  if (item.name) {
+                    data.name = item.name;
+                  }
+                  if (item.zoom) {
+                    data.zoom = item.zoom;
+                  }
+                  datas.push(data);
+                });
                 retrive_resolv(datas);
-              })
-              .catch((er) => {
-                retrive_reject(er);
-              });
-          } else if (field_config.field_type == "google_map_field") {
-            values.und.forEach((item) => {
-              const data = {};
-              if (item.lat) {
-                data.lat = item.lat;
+              } else {
+                values.und.forEach((item) => {
+                  const data = {};
+                  if (item.value) data.value = item.value;
+                  if (item.target_id) data.target_id = item.target_id;
+                  if (item.fid) data.target_id = item.fid;
+                  if (item.alt) data.alt = item.alt;
+                  if (item.format) data.format = item.format;
+                  if (item.summary) data.summary = item.summary;
+                  if (item.rgb) {
+                    data.color = item.rgb;
+                    data.name = "";
+                  }
+                  // S'il nya pas de valeur on affiche une erreur.
+                  if (isEmptyObject(data)) {
+                    console.log(field_config);
+                    retrive_reject("Le contenu de la valeur est n'est pas traiter : " + JSON.stringify(item));
+                  }
+                  datas.push(data);
+                });
+                retrive_resolv(datas);
               }
-              if (item.lon) {
-                data.lon = item.lon;
-                // On definit la valeur par defaut provenant de configuration.
-                if (field_config.default_value && field_config.default_value[0] && field_config.default_value[0].marker_icon) {
-                  data.marker_icon = field_config.default_value[0].marker_icon;
-                }
-              }
-              if (item.map_height) {
-                data.height = item.map_height;
-              }
-              if (item.map_width) {
-                data.width = item.map_width;
-              }
-              if (item.name) {
-                data.name = item.name;
-              }
-              if (item.zoom) {
-                data.zoom = item.zoom;
-              }
-              datas.push(data);
-            });
-            retrive_resolv(datas);
-          } else {
-            values.und.forEach((item) => {
-              const data = {};
-              if (item.value) data.value = item.value;
-              if (item.target_id) data.target_id = item.target_id;
-              if (item.fid) data.target_id = item.fid;
-              if (item.alt) data.alt = item.alt;
-              if (item.format) data.format = item.format;
-              if (item.summary) data.summary = item.summary;
-              if (item.rgb) {
-                data.color = item.rgb;
-                data.name = "";
-              }
-              // S'il nya pas de valeur on affiche une erreur.
-              if (isEmpty(data)) {
-                console.log(field_config);
-                retrive_reject("Le contenu de la valeur est n'est pas traiter : " + JSON.stringify(item));
-              }
-              datas.push(data);
-            });
-            retrive_resolv(datas);
-          }
-        } else {
-          console.log("Erreur, contenu du champs ", values, "\n Information sur le champs : ", field_config);
-          retrive_reject("Impossible de recuperer les données");
-        }
-      });
-    };
-    const getInfosAboutD7filed = (fieldName) => {
-      let NewItem = false;
-      tab.fields.d7.forEach((item) => {
-        if (item.id == fieldName) {
-          NewItem = item;
-        }
-      });
-      return NewItem;
-    };
+            } else {
+              console.log("Erreur, contenu du champs ", values, "\n Information sur le champs : ", field_config);
+              retrive_reject("Impossible de recuperer les données");
+            }
+          });
+        };
+        const getInfosAboutD7filed = (fieldName) => {
+          let NewItem = false;
+          tab.fields.d7.forEach((item) => {
+            if (item.id == fieldName) {
+              NewItem = item;
+            }
+          });
+          return NewItem;
+        };
 
-    /**
-     * Construction des champs, lors de cette construction on peut avoir besoin de creer d'autres données nessaire et recupere l'id final.
-     * On ferra cela dans une boucle personnalisé afin de controller le processus.
-     */
-    const loopFields = (id, contents) => {
-      return new Promise((resolv, reject) => {
-        if (tab.fields.d10[id]) {
-          const field = tab.fields.d10[id];
-          if (!field.is_manuel_creation && entity[field.field_config.field_name] && entity[field.field_config.field_name].und) {
-            const fieldD7 = getInfosAboutD7filed(field.field_config.field_name);
-            retriveDataInField(entity[field.field_config.field_name], field.field_config, fieldD7)
-              .then((datas) => {
-                // if ("field_popup" == field.field_config.field_name) {
-                //   console.log(field.field_config.field_name, " :: ", datas);
-                // }
-                contents[field.field_config.field_name] = datas;
+        /**
+         * Construction des champs, lors de cette construction on peut avoir besoin de creer d'autres données nessaire et recupere l'id final.
+         * On ferra cela dans une boucle personnalisé afin de controller le processus.
+         */
+        const loopFields = (id, contents) => {
+          return new Promise((resolv, reject) => {
+            if (tab.fields.d10[id]) {
+              const field = tab.fields.d10[id];
+              if (!field.is_manuel_creation && entity[field.field_config.field_name] && entity[field.field_config.field_name].und) {
+                const fieldD7 = getInfosAboutD7filed(field.field_config.field_name);
+                retriveDataInField(entity[field.field_config.field_name], field.field_config, fieldD7)
+                  .then((datas) => {
+                    // if ("field_popup" == field.field_config.field_name) {
+                    //   console.log(field.field_config.field_name, " :: ", datas);
+                    // }
+                    contents[field.field_config.field_name] = datas;
+                    id++;
+                    resolv(loopFields(id, contents));
+                  })
+                  .catch((er) => {
+                    reject(er);
+                  });
+              } else {
                 id++;
                 resolv(loopFields(id, contents));
+              }
+            } else {
+              resolv(contents);
+            }
+          });
+        };
+        loopFields(0, {})
+          .then((contents) => {
+            var entity_type_id = props.entity_type_id;
+            if (props.entity_type_id == "multifield") entity_type_id = "paragraph";
+            config
+              .post(config.getCustomDomain() + "/apivuejs/save-entity/" + entity_type_id, { ...values, ...contents })
+              .then((result) => {
+                console.log("result : ", result);
+                content_create(result);
               })
               .catch((er) => {
-                reject(er);
+                toast.add({ severity: "error", summary: "Erreur de sauvegarde de l'entite", detail: er, life: 8000 });
+                error_create_content(er);
               });
-          } else {
-            id++;
-            resolv(loopFields(id, contents));
-          }
-        } else {
-          resolv(contents);
-        }
-      });
-    };
-    loopFields(0, {})
-      .then((contents) => {
-        var entity_type_id = props.entity_type_id;
-        if (props.entity_type_id == "multifield") entity_type_id = "paragraph";
-        config
-          .post(config.getCustomDomain() + "/apivuejs/save-entity/" + entity_type_id, { ...values, ...contents })
-          .then((result) => {
-            console.log("result : ", result);
-            content_create(result);
           })
           .catch((er) => {
-            toast.add({ severity: "error", summary: "Erreur de sauvegarde de l'entite", detail: er, life: 8000 });
+            console.log("loopFields er :: ", er);
+            toast.add({ severity: "error", summary: "Erreur de traitement de l'entité", detail: er, life: 8000 });
             error_create_content(er);
           });
       })
       .catch((er) => {
-        console.log("loopFields er :: ", er);
-        toast.add({ severity: "error", summary: "Erreur de traitement de l'entité", detail: er, life: 8000 });
+        console.log("buildBaseInfoForEntity er :: ", er);
+        toast.add({ severity: "error", summary: "Erreur de creation des données de base", detail: er, life: 8000 });
         error_create_content(er);
       });
+    //
   });
 };
 
-const buildBaseInfoForEntity = (entity) => {
-  const entity_title = entity[props.entity_key_label];
-  let values = { [props.entity_key_label]: entity_title, [props.entity_key_id]: entity[props.entity_key_id] };
-  // Certains entity ont un champs metafields, il faut le remplir.
-  /**
-   * Les matatags sont deja importé, on verra cela plus tard.
-   */
-  // if (tab.fields.d10) {
-  //   tab.fields.d10.forEach((field) => {
-  //     if (field.field_config && field.field_config.field_type == "metatag" && entity.metatags && (entity.metatags.und || entity.metatags.fr)) {
-  //       //
-  //     }
-  //   });
-  // }
-  switch (props.entity_type_id) {
-    case "node":
-      values = {
-        ...values,
-        uid: entity.uid,
-        type: entity.type,
-        created: entity.created,
-        changed: entity.changed,
-        language: entity.language,
-        status: entity.status,
-      };
-      break;
-    case "multifield":
-      values = {
-        parent_type: entity.parent_type,
-        parent_field_name: entity.parent_field_name,
-        type: entity.type,
-      };
-      if (entity.id) {
-        values.id = entity.id;
-      }
+const buildBaseInfoForEntity = (entity, tab) => {
+  return new Promise((resolv, reject) => {
+    const entity_title = entity[props.entity_key_label];
+    let values = { [props.entity_key_label]: entity_title, [props.entity_key_id]: entity[props.entity_key_id] };
+    // Certains entity ont un champs metafields, il faut le remplir.
+    /**
+     * Les matatags sont deja importé, on verra cela plus tard.
+     */
+    if (tab.fields && tab.fields.d10) {
+      tab.fields.d10.forEach((field) => {
+        if (field.field_config && field.field_config.field_type == "metatag" && entity.metatags) {
+          for (const i in entity.metatags) {
+            const metatagValues = {};
+            for (const j in entity.metatags[i]) {
+              const meta = entity.metatags[i][j];
+              if (j == "title") {
+                metatagValues["title"] = meta.value;
+                metatagValues["og_title"] = meta.value;
+              } else if (j == "description") {
+                metatagValues["description"] = meta.value;
+                metatagValues["og_description"] = meta.value;
+              } else if (j == "robots") {
+                //
+              } else {
+                reject("Le type de metafield n'est pas encore definit", meta);
+              }
+            }
+            if (!isEmptyObject(metatagValues)) {
+              values[field.field_config.field_name] = [{ value: metatagValues }];
+            }
+          }
+        }
+      });
+    }
+    switch (props.entity_type_id) {
+      case "node":
+        values = {
+          ...values,
+          uid: entity.uid,
+          type: entity.type,
+          created: entity.created,
+          changed: entity.changed,
+          language: entity.language,
+          status: entity.status,
+        };
+        break;
+      case "multifield":
+        values = {
+          parent_type: entity.parent_type,
+          parent_field_name: entity.parent_field_name,
+          type: entity.type,
+        };
+        if (entity.id) {
+          values.id = entity.id;
+        }
 
-      break;
-    case "taxonomy_term":
-      values = {
-        ...values,
-        description: [{ value: entity.description, format: "full_html" }],
-        vid: entity.vocabulary_machine_name,
-        weight: entity.weight,
-        parent: [{ target_id: entity.parent.und[0].target_id }],
-      };
-      break;
-    default:
-      break;
-  }
-  return { base_entity: values, entity_title: entity_title };
+        break;
+      case "taxonomy_term":
+        values = {
+          ...values,
+          description: [{ value: entity.description, format: "full_html" }],
+          vid: entity.vocabulary_machine_name,
+          weight: entity.weight,
+          parent: [{ target_id: entity.parent.und[0].target_id }],
+        };
+        break;
+      default:
+        break;
+    }
+    resolv({ base_entity: values, entity_title: entity_title });
+  });
 };
 
 /**
