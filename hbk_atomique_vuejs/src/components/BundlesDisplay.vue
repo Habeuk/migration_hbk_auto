@@ -704,10 +704,11 @@ const buildBaseInfoForEntity = (entity, tab) => {
               } else if (j == "description") {
                 metatagValues["description"] = meta.value;
                 metatagValues["og_description"] = meta.value;
-              } else if (j == "robots" || j == "og:title" || j == "og:description") {
+              } else if (j == "robots" || j == "og:title" || j == "og:description" || j == "canonical") {
                 //
               } else {
-                reject("Le type de metafield n'est pas encore definit", meta);
+                console.log("metafield : ", meta, "\n metatags : ", entity.metatags);
+                reject("Le type de metafield n'est pas encore definit");
               }
             }
             if (!isEmptyObject(metatagValues)) {
