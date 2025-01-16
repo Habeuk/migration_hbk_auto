@@ -555,16 +555,19 @@ const buildAndCreateEntity = async (entity, tab) => {
                   });
               } else if (field_config.field_type == "google_map_field") {
                 values.und.forEach((item) => {
-                  const data = {};
-                  if (item.lat) {
-                    data.lat = item.lat;
-                  }
+                  var data = {};
                   if (item.lon) {
-                    data.lon = item.lon;
                     // On definit la valeur par defaut provenant de configuration.
                     if (field_config.default_value && field_config.default_value[0] && field_config.default_value[0].marker_icon) {
-                      data.marker_icon = field_config.default_value[0].marker_icon;
+                      // data.marker_icon = field_config.default_value[0].marker_icon;
+                      // data.type = field_config.default_value[0].type;
+                      data = field_config.default_value[0];
+                      // data.type = "terrain";
                     }
+                    data.lon = item.lon;
+                  }
+                  if (item.lat) {
+                    data.lat = item.lat;
                   }
                   if (item.map_height) {
                     data.height = item.map_height;
@@ -596,7 +599,7 @@ const buildAndCreateEntity = async (entity, tab) => {
                   }
                   // S'il nya pas de valeur on affiche une erreur.
                   if (isEmptyObject(data)) {
-                    console.log(field_config);
+                    console.log("field_config.field_type ::", field_config.field_type, "\n field_config :: ", field_config);
                     retrive_reject("Le contenu de la valeur est n'est pas traiter : " + JSON.stringify(item));
                   }
                   datas.push(data);
@@ -701,7 +704,7 @@ const buildBaseInfoForEntity = (entity, tab) => {
               } else if (j == "description") {
                 metatagValues["description"] = meta.value;
                 metatagValues["og_description"] = meta.value;
-              } else if (j == "robots") {
+              } else if (j == "robots" || j == "og:title" || j == "og:description") {
                 //
               } else {
                 reject("Le type de metafield n'est pas encore definit", meta);
