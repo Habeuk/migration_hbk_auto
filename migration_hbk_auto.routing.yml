@@ -1,39 +1,56 @@
 migration_hbk_auto.import_from_d7:
-  path: '/admin/migration-hbk-auto/import-from-d7'
+  path: "/admin/migration-hbk-auto/import-from-d7"
   defaults:
-    _title: 'Import From D7'
+    _title: "Import From D7"
     _controller: '\Drupal\migration_hbk_auto\Controller\ImportFromD7Controller'
   requirements:
-    _permission: 'access content'
+    _permission: "access content"
 
 migration_hbk_auto.manage_config:
-  path: '/admin/migration-hbk-auto/manage-config'
+  path: "/admin/migration-hbk-auto/manage-config"
   defaults:
-    _title: 'Import From D7'
+    _title: "Import From D7"
     _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::loadConfig'
   requirements:
-    _permission: 'access content'
-    
+    _permission: "access content"
+
 migration_hbk_auto.generate_fields:
-  path: '/admin/migration-hbk-auto/generate-fields'
+  path: "/admin/migration-hbk-auto/generate-fields"
   defaults:
-    _title: 'Import From D7'
+    _title: "Import From D7"
     _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::generateFields'
   requirements:
-    _permission: 'access content'
-    
+    _permission: "access content"
+
 migration_hbk_auto.import_files:
-  path: '/admin/migration-hbk-auto/import-files'
+  path: "/admin/migration-hbk-auto/import-files"
   defaults:
-    _title: 'Import fields'
+    _title: "Import fields"
     _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::importFiles'
   requirements:
-    _permission: 'access content'
-    
+    _permission: "access content"
+
 migration_hbk_auto.import_terms:
-  path: '/admin/migration-hbk-auto/import-terms'
+  path: "/admin/migration-hbk-auto/import-terms"
   defaults:
-    _title: 'Import fields'
+    _title: "Import fields"
     _controller: '\Drupal\migration_hbk_auto\Controller\ManageConfigController::CheckTermsExist'
   requirements:
-    _permission: 'access content'
+    _permission: "access content"
+
+migration_hbk_auto.migration_settings:
+  path: "/admin/config/system/migration-settings"
+  defaults:
+    _title: "Migration settings"
+    _form: 'Drupal\migration_hbk_auto\Form\MigrationSettings'
+  requirements:
+    _permission: "administer site configuration"
+
+migration_hbk_auto.get_migration_settings:
+  path: "/admin/migration-hbk-auto/get-migration-settings"
+  defaults:
+    _title: "Get Migration Settings"
+    _controller: '\Drupal\migration_hbk_auto\Controller\ImportFromD7Controller::getMigrationSettings'
+  requirements:
+    _permission: "administer site configuration"
+  methods: [GET]

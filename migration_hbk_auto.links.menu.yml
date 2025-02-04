@@ -1,0 +1,5 @@
+migration_hbk_auto.migration_settings:
+  title: Migration settings
+  parent: system.admin_config_services
+  route_name: migration_hbk_auto.migration_settings
+  weight: 10
