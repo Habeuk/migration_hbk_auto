@@ -1,14 +1,25 @@
 {
-    "name": "habeuk/migration_hbk_auto",
-    "description": "Permet de migrer les données",
-    "type": "drupal-module",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "kouwa stephane",
-            "email": "kksasteph888@gmail.com"
-        }
-    ],
-    "minimum-stability": "dev",
-    "require": {}
+  "name": "habeuk/migration_hbk_auto",
+  "description": "Permet de migrer les données",
+  "type": "drupal-module",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "kouwa stephane",
+      "email": "kksasteph888@gmail.com"
+    },
+    {
+      "name": "Abanda Steve",
+      "email": "ngh.abandasteve@gmail.com",
+      "homepage": "https://www.drupal.org/u/vysti",
+      "role": "Maintener"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "drupal/migrate_plus": "^6.0",
+    "drupal/migrate_tools": "^6.0",
+    "drupal/migrate_upgrade": "^4.0",
+    "drupal/views_migration": "^1.2"
+  }
 }
