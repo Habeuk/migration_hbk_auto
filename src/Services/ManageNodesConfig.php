@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace Drupal\migration_hbk_auto\Services;
 
@@ -20,11 +21,11 @@ class ManageNodesConfig extends ManageFieldsConfig {
   protected $configStorage;
   protected $EntityTypeManager;
   protected $ConfigManager;
-  
+
   function __construct(StorageInterface $config_storage, EntityTypeManagerInterface $EntityTypeManager, ConfigManager $ConfigManager) {
     parent::__construct($config_storage, $EntityTypeManager, $ConfigManager);
   }
-  
+
   /**
    * Charge l'image si elle est deja importé sinon essaie de l'impoté et retoune
    * le object image..
@@ -43,7 +44,9 @@ class ManageNodesConfig extends ManageFieldsConfig {
        *
        * @var string $domain_D7
        */
-      $domain_D7 = "http://you-v7.kksa";
+      $config = \Drupal::config('migration_hbk_auto.settings');
+      $domain_D7 = $config->get('source_site_url');
+      // dd($domain_D7);
       $file_D7 = self::http_get_contents($domain_D7 . "/migrateexport/export-import-entity/load-file/" . $fid);
       if (!$file_D7)
         throw new \Exception("Le fichier n'a pas été trouvé sur le serveur source");
@@ -53,7 +56,7 @@ class ManageNodesConfig extends ManageFieldsConfig {
        * @var \Drupal\Core\File\FileSystem $filesystem
        */
       $filesystem = \Drupal::service('file_system');
-      
+
       $data = self::http_get_contents($file_D7['url']);
       if (!empty($data)) {
         // Check the directory exists before writing data to it.
@@ -69,17 +72,14 @@ class ManageNodesConfig extends ManageFieldsConfig {
           $file->setPermanent();
           $file->save();
           return $file;
-        }
-        else
+        } else
           throw new \Exception("Une erreur s'est produite, le fichier n'a pas pu etre creer");
-      }
-      else
+      } else
         throw new \Exception("Le fichier n'a pas pu etre telecharger");
-    }
-    else
+    } else
       return $file;
   }
-  
+
   /**
    * Permet d'analyser la configuration
    */
@@ -92,8 +92,7 @@ class ManageNodesConfig extends ManageFieldsConfig {
     if ($entity_id == 'taxonomy_term') {
       $bundle_key = 'vid';
       $config_id = "taxonomy.vocabulary." . $bundle;
-    }
-    elseif ($entity_id == 'paragraph') {
+    } elseif ($entity_id == 'paragraph') {
       $config_id = "paragraphs.paragraphs_type." . $bundle;
     }
     $results = [
@@ -136,10 +135,10 @@ class ManageNodesConfig extends ManageFieldsConfig {
     /**
      * 3: Verification des modes d'editions.
      */
-    
+
     return $results;
   }
-  
+
   protected function compareFieldsD7__D10(&$results, $newFields, $olds_fields) {
     $status = true;
     $results['errors'] = [];
@@ -148,14 +147,14 @@ class ManageNodesConfig extends ManageFieldsConfig {
         $status = false;
         $results['errors'][$fieldName] = $value;
       }
-      
+
       if ($status) {
         //
       }
     }
     return $status;
   }
-  
+
   /**
    * Cest un tableau qui contient les bases de l'informations.
    *
@@ -178,7 +177,7 @@ class ManageNodesConfig extends ManageFieldsConfig {
     ];
     return $values;
   }
-  
+
   static protected function http_get_contents($url) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -187,7 +186,7 @@ class ManageNodesConfig extends ManageFieldsConfig {
     curl_close($ch);
     return $output;
   }
-  
+
   /**
    * Le uri contient egalement le nom de l'image, l'idée est de separer les
    * deux.
@@ -204,8 +203,7 @@ class ManageNodesConfig extends ManageFieldsConfig {
         $basePath .= $f2[$i] . "/";
       }
       $filename = $f2[$nbre];
-    }
-    else {
+    } else {
       $basePath .= "migrations";
       $filename = $f2[0];
     }
