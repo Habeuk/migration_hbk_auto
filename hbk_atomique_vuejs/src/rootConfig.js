@@ -1,10 +1,13 @@
-import { AjaxBasic } from "wbuutilities";
+import AjaxBasic from "wbuutilities/src/Ajax/basic.js";
+// const AjaxBasic = null;
+console.log("basic: ", AjaxBasic);
 /**
  * Permet de determiner le domaine interne. ( pour des besoins de developpement plusieurs domaines sont disponible )
  */
 const getCustomDomain = async (external = false) => {
   if (external) {
     const response = await fetch('/admin/migration-hbk-auto/get-migration-settings');
+    console.log("response:", response);
     if (response.status == 200) {
       const datas = await response.json();
       console.log(datas);
@@ -42,11 +45,12 @@ const config = {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   },
   getCustomDomain(external = false) {
+    console.log("this: ", this);
     if (this.requestDomain) {
       this.requestDomain = getCustomDomain(external);
     }
     console.log('domain ', this.requestDomain);
-    return this.requestDomain;
+    return this.requestDomain ? this.requestDomain : "http://rema-10.local";
   },
 };
 export default config;
