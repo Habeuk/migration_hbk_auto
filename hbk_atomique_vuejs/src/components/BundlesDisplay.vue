@@ -2,20 +2,11 @@
   <!--
 Ce fichier permet d'affichager toutes les configurations.
 -->
-  <div
-    class="card bundles-display"
-    :style="{ 'max-width': '1200px', padding: '0.5rem' }"
-  >
+  <div class="card bundles-display" :style="{ 'max-width': '1200px', padding: '0.5rem' }">
     <Button :label="numbersBundles" @click="buildBundle" />
     <Accordion v-if="bundles.items.length" value="0" class="my-3">
-      <AccordionPanel
-        v-for="tab in bundles.items"
-        :key="tab.id"
-        :value="tab.id"
-      >
-        <AccordionHeader
-          class="bg-secondary-subtle py-2 border-0 border-secondary-subtle border-bottom"
-        >
+      <AccordionPanel v-for="tab in bundles.items" :key="tab.id" :value="tab.id">
+        <AccordionHeader class="bg-secondary-subtle py-2 border-0 border-secondary-subtle border-bottom">
           <div>
             {{ tab.title }} <i>({{ tab.id }})</i>
           </div>
@@ -24,37 +15,17 @@ Ce fichier permet d'affichager toutes les configurations.
           <!-- Analyse de configuration -->
           <div class="row mb-3">
             <div class="col">
-              <Button
-                label="Verifier la configuration"
-                severity="secondary"
-                @click="CheckConfig(tab)"
-              />
+              <Button label="Verifier la configuration" severity="secondary" @click="CheckConfig(tab)" />
             </div>
-            <div
-              v-if="tab.fields.errors && tab.fields.errors.length"
-              class="col"
-            >
-              <Button
-                label="Creer les champs manquant"
-                severity="info"
-                @click="CreateFieldsNotExist(tab)"
-              />
+            <div v-if="tab.fields.errors && tab.fields.errors.length" class="col">
+              <Button label="Creer les champs manquant" severity="info" @click="CreateFieldsNotExist(tab)" />
             </div>
             <div v-if="tab.fields.d7 && tab.fields.d7.length" class="col">
-              <Button
-                label="Re-creer tous les champs"
-                severity="warn"
-                @click="ReCreateAllFields(tab)"
-              />
+              <Button label="Re-creer tous les champs" severity="warn" @click="ReCreateAllFields(tab)" />
             </div>
           </div>
           <ul class="col">
-            <li
-              v-for="message in tab.messagesConfig"
-              :key="message.id"
-              :value="message.id"
-              :class="[message.status ? '' : 'text-danger']"
-            >
+            <li v-for="message in tab.messagesConfig" :key="message.id" :value="message.id" :class="[message.status ? '' : 'text-danger']">
               {{ message.content }}
             </li>
           </ul>
@@ -62,31 +33,16 @@ Ce fichier permet d'affichager toutes les configurations.
             <div class="col">
               <h6>Les champs au niveau de D7</h6>
               <ul>
-                <li
-                  v-for="field in tab.fields.d7"
-                  :key="field.id"
-                  :value="field.id"
-                  :class="[field.is_created ? 'text-success' : 'text-danger']"
-                >
+                <li v-for="field in tab.fields.d7" :key="field.id" :value="field.id" :class="[field.is_created ? 'text-success' : 'text-danger']">
                   {{ field.label }}
-                  <i class="small"
-                    >( fieldname: {{ field.id }}, type:
-                    {{ field.type_field }} )</i
-                  >
+                  <i class="small">( fieldname: {{ field.id }}, type: {{ field.type_field }} )</i>
                 </li>
               </ul>
             </div>
             <div v-if="tab.fields.d10.length" class="col">
               <h6>Les champs au niveau de D10</h6>
               <ul>
-                <li
-                  v-for="field in tab.fields.d10"
-                  :key="field.id"
-                  :value="field.id"
-                  :class="[
-                    field.is_manuel_creation ? 'text-info' : 'text-success',
-                  ]"
-                >
+                <li v-for="field in tab.fields.d10" :key="field.id" :value="field.id" :class="[field.is_manuel_creation ? 'text-info' : 'text-success']">
                   {{ field.label }} <i>({{ field.id }})</i>
                 </li>
               </ul>
@@ -96,15 +52,9 @@ Ce fichier permet d'affichager toutes les configurations.
           <div v-if="tab.messagesFields.length">
             <hr />
             <Accordion value="field_info">
-              <AccordionPanel
-                v-for="sub_tab in tab.messagesFields"
-                :key="sub_tab.id"
-                :value="sub_tab.id"
-              >
+              <AccordionPanel v-for="sub_tab in tab.messagesFields" :key="sub_tab.id" :value="sub_tab.id">
                 <AccordionHeader class="bg-light-subtle py-1 fw-normal">
-                  <div
-                    :class="[sub_tab.status ? 'text-success' : 'text-danger']"
-                  >
+                  <div :class="[sub_tab.status ? 'text-success' : 'text-danger']">
                     {{ sub_tab.label }}
                   </div>
                 </AccordionHeader>
@@ -120,14 +70,7 @@ Ce fichier permet d'affichager toutes les configurations.
             </Accordion>
           </div>
           <!-- gestion de l'import des contenus -->
-          <div
-            v-if="
-              tab.fields.errors &&
-              tab.fields.errors.length == 0 &&
-              tab.messagesConfig &&
-              tab.messagesConfig.length
-            "
-          >
+          <div v-if="tab.fields.errors && tab.fields.errors.length == 0 && tab.messagesConfig && tab.messagesConfig.length">
             <hr />
             <div class="row mb-3">
               <div class="col col-sm-3">
@@ -142,33 +85,18 @@ Ce fichier permet d'affichager toutes les configurations.
             <div class="row">
               <div class="col">
                 <div class="flex items-center gap-2">
-                  <Checkbox
-                    v-model="tab.pagination.continue"
-                    binary
-                    :inputId="tab.id + '_continue'"
-                  />
-                  <label :for="tab.id + '_continue'" class="text-sm"
-                    >Continue</label
-                  >
+                  <Checkbox v-model="tab.pagination.continue" binary :inputId="tab.id + '_continue'" />
+                  <label :for="tab.id + '_continue'" class="text-sm">Continue</label>
                 </div>
                 <Button
-                  :label="
-                    'Importer les contenus : ' +
-                    tab.pagination.start +
-                    '/' +
-                    tab.count_entities.to_import
-                  "
+                  :label="'Importer les contenus : ' + tab.pagination.start + '/' + tab.count_entities.to_import"
                   severity="success"
                   @click="ImportContentNotExit(tab)"
                   :disabled="tab.pagination.run"
                 />
               </div>
               <div class="col">
-                <Button
-                  label="Gestion de l'import des contenus"
-                  severity="info"
-                  @click="ManageImportContent(tab)"
-                />
+                <Button label="Gestion de l'import des contenus" severity="info" @click="ManageImportContent(tab)" />
               </div>
             </div>
             <Dialog
@@ -185,22 +113,12 @@ Ce fichier permet d'affichager toutes les configurations.
                 <Column field="name" header="Titre"></Column>
                 <Column field="status" header="Status">
                   <template #body="slotProps">
-                    <Tag
-                      :value="slotProps.data.status ? 'Active' : 'Disabled'"
-                      :severity="slotProps.data.status ? 'success' : 'warn'"
-                    />
+                    <Tag :value="slotProps.data.status ? 'Active' : 'Disabled'" :severity="slotProps.data.status ? 'success' : 'warn'" />
                   </template>
                 </Column>
                 <Column field="action" header="#action">
                   <template #body="slotProps">
-                    <Button
-                      icon="pi pi-upload"
-                      class="fw-bold"
-                      rounded
-                      raised
-                      @click="importOneContent(slotProps.data, tab)"
-                      :disabled="slotProps.data.run"
-                    />
+                    <Button icon="pi pi-upload" class="fw-bold" rounded raised @click="importOneContent(slotProps.data, tab)" :disabled="slotProps.data.run" />
                   </template>
                 </Column>
               </DataTable>
@@ -232,14 +150,7 @@ import Tag from "primevue/tag";
 // import Row from 'primevue/row';                   // optional
 import { useToast } from "primevue/usetoast";
 
-const props = defineProps([
-  "bundles",
-  "base_table",
-  "bundle_key",
-  "entity_type_id",
-  "entity_key_id",
-  "entity_key_label",
-]);
+const props = defineProps(["bundles", "base_table", "bundle_key", "entity_type_id", "entity_key_id", "entity_key_label"]);
 /**
  * Ce gap permet de ne pas ecraser les paragraphes.
  */
@@ -351,16 +262,10 @@ const CheckConfig = (tab) => {
   tab.messagesConfig = [];
   tab.messagesFields = [];
 
-  const url =
-    config.getCustomDomain() + "/admin/migration-hbk-auto/manage-config";
+  const url = config.getCustomDomain() + "/admin/migration-hbk-auto/manage-config";
   console.log("url : ", url);
   config
-    .get(
-      "/migrateexport/migrate-export-entities/" +
-        props.entity_type_id +
-        "/" +
-        tab.id
-    )
+    .get("/migrateexport/migrate-export-entities/" + props.entity_type_id + "/" + tab.id)
     .then((result) => {
       if (result.data) {
         tab.count_entities.to_import = result.data[tab.id].count_entities;
@@ -370,8 +275,7 @@ const CheckConfig = (tab) => {
           status: true,
           value: result.data[tab.id].count_entities,
         });
-        let config_id =
-          props.entity_type_id + "." + props.bundle_key + "." + tab.id;
+        let config_id = props.entity_type_id + "." + props.bundle_key + "." + tab.id;
         // if ("taxonomy_term" == props.entity_type_id) {
         //   config_id = "taxonomy.vocabulary." + tab.id;
         // }
@@ -387,13 +291,7 @@ const CheckConfig = (tab) => {
         config.post(url, datas).then((resultD10) => {
           console.log("D10  : ", resultD10);
           if (resultD10.data) {
-            analysisFields(
-              tab,
-              resultD10.data.fields.value,
-              resultD10.data.fields.errors,
-              result.data[tab.id].fields,
-              result.data[tab.id].extra_fields
-            );
+            analysisFields(tab, resultD10.data.fields.value, resultD10.data.fields.errors, result.data[tab.id].fields, result.data[tab.id].extra_fields);
             for (var i in resultD10.data) {
               const item = resultD10.data[i];
               tab.messagesConfig.push({
@@ -431,13 +329,7 @@ const CheckConfig = (tab) => {
  * @param notDefineFields
  * @param fieldsD7
  */
-const analysisFields = (
-  tab,
-  fieldsD10,
-  notDefineFields,
-  fieldsD7,
-  extra_fields
-) => {
+const analysisFields = (tab, fieldsD10, notDefineFields, fieldsD7, extra_fields) => {
   for (var i in fieldsD10) {
     const field = fieldsD10[i];
     tab.fields.d10.push({
@@ -483,15 +375,12 @@ const CreateFieldsNotExist = (tab) => {
     entity_type_id = "block_content";
   }
   config
-    .post(
-      config.getCustomDomain() + "/admin/migration-hbk-auto/generate-fields",
-      {
-        fields: tab.fields.errors,
-        entity_type: entity_type_id,
-        bundle_key: bundle_key,
-        bundle: tab.id,
-      }
-    )
+    .post(config.getCustomDomain() + "/admin/migration-hbk-auto/generate-fields", {
+      fields: tab.fields.errors,
+      entity_type: entity_type_id,
+      bundle_key: bundle_key,
+      bundle: tab.id,
+    })
     .then((result) => {
       console.log("result : ", result);
       if (result.data) {
@@ -529,16 +418,7 @@ const ImportContentNotExit = (tab) => {
   tab.pagination.run = true;
   // Cette approche est centre d'avantage sur les nodes.
   config
-    .get(
-      "/migrateexport/export-import-entities/load-entities/" +
-        props.entity_type_id +
-        "/" +
-        tab.id +
-        "/" +
-        start +
-        "/" +
-        length
-    )
+    .get("/migrateexport/export-import-entities/load-entities/" + props.entity_type_id + "/" + tab.id + "/" + start + "/" + length)
     .then((reult) => {
       if (reult.data) {
         const promises = [];
@@ -600,10 +480,7 @@ const buildMultiFieldDatas = (multifieldDatas) => {
     const CheckParagrphExist = (values) => {
       return new Promise((url_resolv, url_reject) => {
         const paragraph_id = parseInt(values.id) + gap_paragraph;
-        const url =
-          config.getCustomDomain() +
-          "/apivuejs/canonical-entity/paragraph/" +
-          paragraph_id;
+        const url = config.getCustomDomain() + "/apivuejs/canonical-entity/paragraph/" + paragraph_id;
         config
           .get(url)
           .then((result) => {
@@ -679,15 +556,10 @@ const buildAndCreateEntity = async (entity, tab) => {
               // On importe les images si ele n'existe pas.
               if (field_config.field_type == "image") {
                 config
-                  .post(
-                    config.getCustomDomain() +
-                      "/admin/migration-hbk-auto/import-files",
-                    {
-                      files: values.und,
-                      base_url:
-                        "http://rema-7.local/sites/charles-rema.fr/files",
-                    }
-                  )
+                  .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-files", {
+                    files: values.und,
+                    base_url: config.getCustomDomain(true) + "/sites/charles-rema.fr/files",
+                  })
                   .then((result) => {
                     const files = result.data;
                     values.und.forEach((item) => {
@@ -713,15 +585,10 @@ const buildAndCreateEntity = async (entity, tab) => {
                 // cas des tags
                 if (field_config.settings.handler == "default:taxonomy_term") {
                   config
-                    .post(
-                      config.getCustomDomain() +
-                        "/admin/migration-hbk-auto/import-terms",
-                      {
-                        terms: values.und,
-                        vocabularies:
-                          field_config.settings.handler_settings.target_bundles,
-                      }
-                    )
+                    .post(config.getCustomDomain() + "/admin/migration-hbk-auto/import-terms", {
+                      terms: values.und,
+                      vocabularies: field_config.settings.handler_settings.target_bundles,
+                    })
                     .then((result) => {
                       const terms = result.data;
                       values.und.forEach((term) => {
@@ -736,28 +603,16 @@ const buildAndCreateEntity = async (entity, tab) => {
                           // );
                           console.log(
                             "error : ",
-                            "Le terme taxo : '" +
-                              term.tid +
-                              "' du vocabulaire '" +
-                              JSON.stringify(
-                                field_config.settings.handler_settings
-                                  .target_bundles
-                              ) +
-                              "' n'existe pas"
+                            "Le terme taxo : '" + term.tid + "' du vocabulaire '" + JSON.stringify(field_config.settings.handler_settings.target_bundles) + "' n'existe pas"
                           );
                         }
                       });
                       retrive_resolv(datas);
                     })
                     .catch(() => {
-                      retrive_reject(
-                        "Une erreur s'est produite lors de la verification des termes"
-                      );
+                      retrive_reject("Une erreur s'est produite lors de la verification des termes");
                     });
-                } else if (
-                  field_config.settings.handler == "views" ||
-                  field_config.settings.handler == "default:node"
-                ) {
+                } else if (field_config.settings.handler == "views" || field_config.settings.handler == "default:node") {
                   // pour l'instant, on n'a pas trouver comment verifier les données pour ce cas.
                   values.und.forEach((entity_reference) => {
                     datas.push({
@@ -765,11 +620,7 @@ const buildAndCreateEntity = async (entity, tab) => {
                     });
                   });
                   retrive_resolv(datas);
-                } else
-                  retrive_reject(
-                    "L'entite de reference n'est pas encore traiter : " +
-                      JSON.stringify(field_config)
-                  );
+                } else retrive_reject("L'entite de reference n'est pas encore traiter : " + JSON.stringify(field_config));
               }
               // Les paragraphes doivent etre creer, on verifie s'ils existent, et on retourne l'id.
               else if (fieldD7.type_field == "multifield") {
@@ -792,11 +643,7 @@ const buildAndCreateEntity = async (entity, tab) => {
                   var data = {};
                   if (item.lon) {
                     // On definit la valeur par defaut provenant de configuration.
-                    if (
-                      field_config.default_value &&
-                      field_config.default_value[0] &&
-                      field_config.default_value[0].marker_icon
-                    ) {
+                    if (field_config.default_value && field_config.default_value[0] && field_config.default_value[0].marker_icon) {
                       // data.marker_icon = field_config.default_value[0].marker_icon;
                       // data.type = field_config.default_value[0].type;
                       data = field_config.default_value[0];
@@ -837,28 +684,15 @@ const buildAndCreateEntity = async (entity, tab) => {
                   }
                   // S'il nya pas de valeur on affiche une erreur.
                   if (isEmptyObject(data)) {
-                    console.log(
-                      "field_config.field_type ::",
-                      field_config.field_type,
-                      "\n field_config :: ",
-                      field_config
-                    );
-                    retrive_reject(
-                      "Le contenu de la valeur est n'est pas traiter : " +
-                        JSON.stringify(item)
-                    );
+                    console.log("field_config.field_type ::", field_config.field_type, "\n field_config :: ", field_config);
+                    retrive_reject("Le contenu de la valeur est n'est pas traiter : " + JSON.stringify(item));
                   }
                   datas.push(data);
                 });
                 retrive_resolv(datas);
               }
             } else {
-              console.log(
-                "Erreur, contenu du champs ",
-                values,
-                "\n Information sur le champs : ",
-                field_config
-              );
+              console.log("Erreur, contenu du champs ", values, "\n Information sur le champs : ", field_config);
               retrive_reject("Impossible de recuperer les données");
             }
           });
@@ -881,19 +715,9 @@ const buildAndCreateEntity = async (entity, tab) => {
           return new Promise((resolv, reject) => {
             if (tab.fields.d10[id]) {
               const field = tab.fields.d10[id];
-              if (
-                !field.is_manuel_creation &&
-                entity[field.field_config.field_name] &&
-                entity[field.field_config.field_name].und
-              ) {
-                const fieldD7 = getInfosAboutD7filed(
-                  field.field_config.field_name
-                );
-                retriveDataInField(
-                  entity[field.field_config.field_name],
-                  field.field_config,
-                  fieldD7
-                )
+              if (!field.is_manuel_creation && entity[field.field_config.field_name] && entity[field.field_config.field_name].und) {
+                const fieldD7 = getInfosAboutD7filed(field.field_config.field_name);
+                retriveDataInField(entity[field.field_config.field_name], field.field_config, fieldD7)
                   .then((datas) => {
                     // if ("field_popup" == field.field_config.field_name) {
                     //   console.log(field.field_config.field_name, " :: ", datas);
@@ -917,15 +741,9 @@ const buildAndCreateEntity = async (entity, tab) => {
         loopFields(0, {})
           .then((contents) => {
             var entity_type_id = props.entity_type_id;
-            if (props.entity_type_id == "multifield")
-              entity_type_id = "paragraph";
+            if (props.entity_type_id == "multifield") entity_type_id = "paragraph";
             config
-              .post(
-                config.getCustomDomain() +
-                  "/apivuejs/save-entity/" +
-                  entity_type_id,
-                { ...values, ...contents }
-              )
+              .post(config.getCustomDomain() + "/apivuejs/save-entity/" + entity_type_id, { ...values, ...contents })
               .then((result) => {
                 console.log("result : ", result);
                 content_create(result);
@@ -978,11 +796,7 @@ const buildBaseInfoForEntity = (entity, tab) => {
      */
     if (tab.fields && tab.fields.d10) {
       tab.fields.d10.forEach((field) => {
-        if (
-          field.field_config &&
-          field.field_config.field_type == "metatag" &&
-          entity.metatags
-        ) {
+        if (field.field_config && field.field_config.field_type == "metatag" && entity.metatags) {
           for (const i in entity.metatags) {
             const metatagValues = {};
             for (const j in entity.metatags[i]) {
@@ -993,27 +807,15 @@ const buildBaseInfoForEntity = (entity, tab) => {
               } else if (j == "description") {
                 metatagValues["description"] = meta.value;
                 metatagValues["og_description"] = meta.value;
-              } else if (
-                j == "robots" ||
-                j == "og:title" ||
-                j == "og:description" ||
-                j == "canonical"
-              ) {
+              } else if (j == "robots" || j == "og:title" || j == "og:description" || j == "canonical") {
                 //
               } else {
-                console.log(
-                  "metafield : ",
-                  meta,
-                  "\n metatags : ",
-                  entity.metatags
-                );
+                console.log("metafield : ", meta, "\n metatags : ", entity.metatags);
                 reject("Le type de metafield n'est pas encore definit");
               }
             }
             if (!isEmptyObject(metatagValues)) {
-              values[field.field_config.field_name] = [
-                { value: metatagValues },
-              ];
+              values[field.field_config.field_name] = [{ value: metatagValues }];
             }
           }
         }
@@ -1094,16 +896,7 @@ const ManageImportContent = (tab) => {
 const importEntities = (bundle, start, length) => {
   return new Promise((resolv, reject) => {
     config
-      .get(
-        "/migrateexport/export-import-entities/load-entities/" +
-          props.entity_type_id +
-          "/" +
-          bundle +
-          "/" +
-          start +
-          "/" +
-          length
-      )
+      .get("/migrateexport/export-import-entities/load-entities/" + props.entity_type_id + "/" + bundle + "/" + start + "/" + length)
       .then((result) => {
         if (result.data) {
           resolv(result.data);
@@ -1123,14 +916,7 @@ const importEntities = (bundle, start, length) => {
 const importEntity = (bundle, entity_id) => {
   return new Promise((resolv, reject) => {
     config
-      .get(
-        "/migrateexport/export-import-entity/load-entity/" +
-          props.entity_type_id +
-          "/" +
-          bundle +
-          "/" +
-          entity_id
-      )
+      .get("/migrateexport/export-import-entity/load-entity/" + props.entity_type_id + "/" + bundle + "/" + entity_id)
       .then((result) => {
         if (result.data) {
           resolv(result.data);

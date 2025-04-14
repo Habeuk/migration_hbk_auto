@@ -1,34 +1,27 @@
 import AjaxBasic from "wbuutilities/src/Ajax/basic.js";
 // const AjaxBasic = null;
-console.log("basic: ", AjaxBasic);
 /**
  * Permet de determiner le domaine interne. ( pour des besoins de developpement plusieurs domaines sont disponible )
  */
 const getCustomDomain = async (external = false) => {
   if (external) {
-    const response = await fetch('/admin/migration-hbk-auto/get-migration-settings');
-    console.log("response:", response);
+    const response = await fetch("/admin/migration-hbk-auto/get-migration-settings");
     if (response.status == 200) {
       const datas = await response.json();
-      console.log(datas);
       if (datas.source_site_url) {
         return datas.source_site_url;
+      } else {
+        throw new Error("Custom domain not found in response");
       }
-      else {
-        throw new Error('Custom domain not found in response');
-      }
-    }
-    else {
-      console.error('Error fetching custom domain:', response);
+    } else {
       return window.location.protocol + "//" + window.location.host;
     }
-  }
-
-  else {
+  } else {
     return window.location.protocol + "//" + window.location.host;
   }
 };
 const url = await getCustomDomain(true);
+// configurer pour recuperer les données vers le site drupal7.
 const config = {
   ...AjaxBasic,
   baseUrl: url,
@@ -45,12 +38,10 @@ const config = {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   },
   getCustomDomain(external = false) {
-    console.log("this: ", this);
     if (this.requestDomain) {
       this.requestDomain = getCustomDomain(external);
     }
-    console.log('domain ', this.requestDomain);
-    return this.requestDomain ? this.requestDomain : "http://rema-10.local";
+    return this.requestDomain ? this.requestDomain : window.location.protocol + "//" + window.location.host;
   },
 };
 export default config;
