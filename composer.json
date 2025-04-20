@@ -21,6 +21,6 @@
     "drupal/migrate_tools": "^6.0",
     "drupal/migrate_upgrade": "^4.0",
     "drupal/views_migration": "^1.2",
-    "habeuk/apivuejs": "^1.2"
+    "drupal/apivuejs": "^1.2"
   }
 }
